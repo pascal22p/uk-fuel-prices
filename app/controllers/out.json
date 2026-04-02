@@ -1,0 +1,79 @@
+[
+  {
+    "node_id": "08cd9fcdaba2563e03f367069a98cd8417ac639d00e9a97c8208f36ab59f52c6",
+    "public_phone_number": "+447485322531",
+    "trading_name": "Boldon Lane Service Station",
+    "is_same_trading_and_brand_name": true,
+    "brand_name": "Boldon Lane Service Station",
+    "temporary_closure": false,
+    "permanent_closure": false,
+    "permanent_closure_date": null,
+    "is_motorway_service_station": false,
+    "is_supermarket_service_station": false,
+    "location": {
+      "address_line_1": "BOLDON LANE SERVICE STATION, BOLDON LANE, SOUTH SHIELDS, NE34 0NB",
+      "address_line_2": null,
+      "city": "SOUTH SHIELDS",
+      "country": "England",
+      "county": null,
+      "postcode": "NE34 0NB",
+      "latitude": 54.9684096,
+      "longitude": -1.4389447
+    },
+    "amenities": [
+      "adblue_packaged",
+      "car_wash"
+    ],
+    "opening_times": {
+      "usual_days": {
+        "monday": {
+          "open": "00:00:00",
+          "close": "23:59:00",
+          "is_24_hours": true
+        },
+        "tuesday": {
+          "open": "00:00:00",
+          "close": "23:59:00",
+          "is_24_hours": true
+        },
+        "wednesday": {
+          "open": "00:00:00",
+          "close": "23:59:00",
+          "is_24_hours": true
+        },
+        "thursday": {
+          "open": "00:00:00",
+          "close": "23:59:00",
+          "is_24_hours": true
+        },
+        "friday": {
+          "open": "00:00:00",
+          "close": "23:59:00",
+          "is_24_hours": true
+        },
+        "saturday": {
+          "open": "00:00:00",
+          "close": "23:59:00",
+          "is_24_hours": true
+        },
+        "sunday": {
+          "open": "00:00:00",
+          "close": "23:59:00",
+          "is_24_hours": true
+        }
+      },
+      "bank_holiday": {
+        "type": "bank holiday",
+        "open_time": "00:00:00",
+        "close_time": "23:59:00",
+        "is_24_hours": true
+      }
+    },
+    "fuel_types": [
+      "B7_PREMIUM",
+      "B7_STANDARD",
+      "E10",
+      "E5"
+    ]
+  }
+  ]
