@@ -2,7 +2,7 @@ package connectors
 
 import cats.data.EitherT
 import config.AppConfig
-import models.CachedToken
+import models.{CachedToken, LoggingWithRequest}
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import play.api.libs.json.*
@@ -17,7 +17,7 @@ class OAuthConnector @Inject()(
                               appConfig: AppConfig,
                               http: HttpClientV2,
                               httpClientResponse: HttpClientResponse
-                            )(implicit ec: ExecutionContext) {
+                            )(implicit ec: ExecutionContext) extends LoggingWithRequest {
 
   @volatile private var cachedToken: Option[CachedToken] = None
 
@@ -48,7 +48,9 @@ class OAuthConnector @Inject()(
       "client_secret" -> Seq(appConfig.clientSecret)
     )
 
-    httpClientResponse.read(http.post(url"${appConfig.tokenUrl}")
+    logger.info(s"client id: ${appConfig.clientId.take(10)}, secret id: ${appConfig.clientSecret.take(10)}")
+
+    httpClientResponse.read(http.post(url"${appConfig.fuelApiHost}/api/v1/oauth/generate_access_token")
       .withBody(formData)
       .execute[Either[UpstreamErrorResponse, HttpResponse]])
       .map { response =>

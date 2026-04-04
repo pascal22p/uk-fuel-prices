@@ -19,7 +19,7 @@ class HomeController @Inject()(
 
   def index() = Action.async { implicit request: Request[AnyContent] =>
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
-    fuelPriceService.uploadAllFps().fold(
+    fuelPriceService.uploadAllFuelPrices().fold(
       error => InternalServerError(s"Call to fuel API went wrong: $error"),
         _   => Ok(views.html.index())
     )

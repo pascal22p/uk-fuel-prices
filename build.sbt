@@ -101,6 +101,12 @@ lazy val ukFuelPrice = (project in file("."))
     javaAgents += "io.pyroscope" % "agent" % "2.5.2",
     PlayKeys.playDefaultPort := 9234,
     libraryDependencies ++= LibDependencies.all,
+    dependencyOverrides ++= Seq(
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.16.1",
+      "com.fasterxml.jackson.core"    % "jackson-databind"     % "2.16.1",
+      "com.fasterxml.jackson.core"    % "jackson-core"         % "2.16.1",
+      "com.fasterxml.jackson.core"    % "jackson-annotations"  % "2.16.1"
+    ),
     scoverageSettings,
     dockerBuildxSettings,
     Compile / compile / wartremoverErrors ++= Warts.allBut(DefaultArguments, ImplicitParameter, Overloading, Equals, Recursion, Any, Throw, SeqApply, Nothing, IterableOps, MutableDataStructures, Var),

@@ -15,17 +15,49 @@ class FuelPriceService @Inject()(
                                 insertSqlQueries: InsertSqlQueries
                                 )(implicit ec: ExecutionContext) {
 
-  final def uploadAllFps(batchNumber: Int = 1)
-                  (implicit hc: HeaderCarrier)
+  final def uploadAllFuelStations(batchNumber: Int = 1)
+                                 (implicit hc: HeaderCarrier)
   : EitherT[Future, UpstreamErrorResponse, Boolean] = {
     // there is no pagination in the api, so you need to hit every batch until one is not found
 
-    fuelPriceConnector.pfs(batchNumber).flatMap {
+    fuelPriceConnector.fuelStations(batchNumber).flatMap {
       case stations if stations.isEmpty => EitherT.rightT(true)
 
       case stations =>
         EitherT.liftF(insertSqlQueries.insertStations(stations)).flatMap { _ =>
-          uploadAllFps(batchNumber + 1)
+          uploadAllFuelStations(batchNumber + 1)
+            .map(_ => true)
+        }
+    }.transform {
+      // not found response. End of the line, returning success.
+      case Left(error) if error.statusCode == NOT_FOUND => Right(true)
+      case result => result
+    }
+  }
+
+  final def uploadAllFuelPrices(batchNumber: Int = 1)
+                                 (implicit hc: HeaderCarrier)
+  : EitherT[Future, UpstreamErrorResponse, Boolean] = {
+    // there is no pagination in the api, so you need to hit every batch until one is not found
+
+    fuelPriceConnector.fuelPrices(batchNumber).flatMap {
+      case fuels if fuels.isEmpty => EitherT.rightT(true)
+
+      case fuels =>
+        val sanitisedFuels = fuels.map { fuelPrices =>
+          fuelPrices.copy(fuelPrices =
+            fuelPrices.fuelPrices.map { fuel =>
+              val fixedPrice = fuel.price match {
+                case price if price < 10.0 => price * 100.0
+                case price if price > 1000.0 => price / 100.0
+                case price => price
+              }
+              fuel.copy(price = fixedPrice)
+            }
+          )
+        }
+        EitherT.liftF(insertSqlQueries.insertFuelPrices(sanitisedFuels)).flatMap { _ =>
+          uploadAllFuelPrices(batchNumber + 1)
             .map(_ => true)
         }
     }.transform {

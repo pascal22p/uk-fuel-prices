@@ -5,7 +5,7 @@ object LibDependencies {
   val libraryDependenciesCompile: Seq[ModuleID] = Seq(
     guice,
     jdbc,
-    "org.mariadb.jdbc"        %  "mariadb-java-client" % "3.5.7",
+    "org.mariadb.jdbc"        %  "mariadb-java-client" % "3.5.8",
     "org.playframework.anorm" %% "anorm"               % "2.11.0",
     "org.typelevel"           %% "cats-core"           % "2.13.0",
     "com.password4j"          %  "password4j"          % "1.8.4",
@@ -18,7 +18,8 @@ object LibDependencies {
   val libraryDependenciesTest: Seq[ModuleID] = Seq(
     "org.scalatestplus.play"  %% "scalatestplus-play" % "7.0.2",
     "org.scalatestplus"       %% "mockito-5-10"       % "3.2.18.0",
-    "org.jsoup"               %  "jsoup"              % "1.22.1"
+    "org.jsoup"               %  "jsoup"              % "1.22.1",
+    "org.wiremock"            % "wiremock"            % "3.4.2"
   ).map(_ % Test)
 
   val all: Seq[ModuleID]  = libraryDependenciesCompile ++ libraryDependenciesTest

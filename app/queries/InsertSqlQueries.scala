@@ -44,4 +44,28 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
     }.sum
   }(using databaseExecutionContext)
 
+  def insertFuelPrices(fuelStations: Seq[FuelPriceForStation]): Future[Int] = Future {
+    val sqlStatement =
+      """REPLACE INTO `fuel_prices`
+        | (`nodeId`, `price`, `fuelType`, `priceLastUpdated`, `priceChangeEffectiveTimestamp`)
+        | VALUES ({nodeId}, {price}, {fuelType}, {priceLastUpdated}, {priceChangeEffectiveTimestamp})
+          """.stripMargin
+
+    val parameters = fuelStations.map { station =>
+      station.fuelPrices.flatMap { fuel =>
+        Seq[NamedParameter](
+          "nodeId" -> station.nodeId,
+          "price" -> fuel.price,
+          "fuelType" -> fuel.fuelType,
+          "priceLastUpdated" -> fuel.priceLastUpdated,
+          "priceChangeEffectiveTimestamp" -> fuel.priceChangeEffectiveTimestamp
+        )
+      }
+    }
+
+    db.withConnection { implicit conn =>
+      BatchSql(sqlStatement, parameters.head, parameters.tail *).execute()
+    }.sum
+  }(using databaseExecutionContext)
+
 }
