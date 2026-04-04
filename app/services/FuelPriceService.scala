@@ -18,7 +18,7 @@ class FuelPriceService @Inject()(
   final def uploadAllFuelStations(batchNumber: Int = 1)
                                  (implicit hc: HeaderCarrier)
   : EitherT[Future, UpstreamErrorResponse, Boolean] = {
-    // there is no pagination in the api, so you need to hit every batch until one is not found
+    // there is no pagination in the api, so we need to hit every batch until one is not found
 
     fuelPriceConnector.fuelStations(batchNumber).flatMap {
       case stations if stations.isEmpty => EitherT.rightT(true)
@@ -38,7 +38,7 @@ class FuelPriceService @Inject()(
   final def uploadAllFuelPrices(batchNumber: Int = 1)
                                  (implicit hc: HeaderCarrier)
   : EitherT[Future, UpstreamErrorResponse, Boolean] = {
-    // there is no pagination in the api, so you need to hit every batch until one is not found
+    // there is no pagination in the api, so we need to hit every batch until one is not found
 
     fuelPriceConnector.fuelPrices(batchNumber).flatMap {
       case fuels if fuels.isEmpty => EitherT.rightT(true)

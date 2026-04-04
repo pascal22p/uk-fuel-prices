@@ -2,16 +2,19 @@ package connectors
 
 import cats.data.EitherT
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.{ok, urlEqualTo}
+import com.github.tomakehurst.wiremock.client.WireMock.{notFound, ok, urlEqualTo}
 import config.AppConfig
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import testUtils.{BaseSpec, WireMockHelper}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
-import models.{FuelStation, FuelStationLocation}
+import models.{FuelPrice, FuelPriceForStation, FuelStation, FuelStationLocation}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
+import play.api.libs.json.JsResultException
+import play.api.test.Helpers.{await, defaultAwaitTimeout}
 
+import java.time.Instant
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
@@ -270,6 +273,40 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
       |]
       |""".stripMargin
 
+  val fuelPricesOkResponse: String =
+    """
+      |[{
+      |    "node_id": "0028acef5f3afc41c7e7d56fb285a940dfb64d6fea01cb4accd79c148321112d",
+      |    "public_phone_number": null,
+      |    "trading_name": "Trading name 1",
+      |    "fuel_prices": [{
+      |        "fuel_type": "E5",
+      |        "price": 159.9,
+      |        "price_last_updated": "2026-02-17T16:03:04.938Z",
+      |        "price_change_effective_timestamp": "2026-02-17T16:00:00.000Z"
+      |      },
+      |      {
+      |        "fuel_type": "E10",
+      |        "price": 132.9,
+      |        "price_last_updated": "2026-02-17T16:03:04.938Z",
+      |        "price_change_effective_timestamp": "2026-02-17T16:00:00.000Z"
+      |      }
+      |    ]
+      |  },
+      |  {
+      |    "node_id": "01da92125c3751767044d06b202f45da5933f0e16e256fa3e98a16af8386308d",
+      |    "public_phone_number": "",
+      |    "trading_name": "trading name 2",
+      |    "fuel_prices": [{
+      |      "fuel_type": "E5",
+      |      "price": 159.9,
+      |      "price_last_updated": "2026-02-17T16:03:04.938Z",
+      |      "price_change_effective_timestamp": "2026-02-17T16:00:00.000Z"
+      |    }]
+      |  }
+      |]
+      |""".stripMargin
+
   "fuelStations" must {
     "return a list of fuel stations" in {
 
@@ -290,6 +327,133 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
           FuelStation("4fd9a4c6b48358b9b5c95989fba100fdcbb87c9e909ed4ce1ad96f64ffb8b56a", "TEST FORECOURT 1", Some(true), "Brand name", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line different"), Some(""), "City again", Some("ENGLAND"), Some("EAST YORKSHIRE"), "post code", 51.258503, -3.417567), List("B10")),
           FuelStation("91bdda1c07fa05110a31639cc66932f9ed8bd388d4f6be542a423365bcfd53e1", "trading name", Some(true), "brand name again", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line 3"), Some("second address line"), "City 3", Some("ENGLAND"), Some("LEICESTERSHIRE"), "postcode 5", 50.503343, -2.12444), List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
         ))
+    }
+
+    "skip invalid fuel stations" in {
+
+      when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
+      when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+
+      server.stubFor(
+        WireMock
+          .get(urlEqualTo("/api/v1/pfs?batch-number=1"))
+          .willReturn(ok(fuelStationOkResponse.replace("\"9b275ab576eeba3c6677984be15ee22a74e54fdfe8e5ea700e84a03178dc4ac1\"", "null")))
+      )
+
+      val result = sut.fuelStations(1).value.futureValue
+
+      result mustBe
+        Right(List(
+          FuelStation("4fd9a4c6b48358b9b5c95989fba100fdcbb87c9e909ed4ce1ad96f64ffb8b56a", "TEST FORECOURT 1", Some(true), "Brand name", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line different"), Some(""), "City again", Some("ENGLAND"), Some("EAST YORKSHIRE"), "post code", 51.258503, -3.417567), List("B10")),
+          FuelStation("91bdda1c07fa05110a31639cc66932f9ed8bd388d4f6be542a423365bcfd53e1", "trading name", Some(true), "brand name again", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line 3"), Some("second address line"), "City 3", Some("ENGLAND"), Some("LEICESTERSHIRE"), "postcode 5", 50.503343, -2.12444), List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
+        ))
+    }
+
+    "return an UpstreamErrorResponse" in {
+
+      when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
+      when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+
+      server.stubFor(
+        WireMock
+          .get(urlEqualTo("/api/v1/pfs?batch-number=1"))
+          .willReturn(notFound())
+      )
+
+      val result = sut.fuelStations(1).value.futureValue
+
+      result mustBe a[Left[UpstreamErrorResponse, ?]]
+    }
+
+    "throw an exception" in {
+
+      when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
+      when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+
+      server.stubFor(
+        WireMock
+          .get(urlEqualTo("/api/v1/pfs?batch-number=1"))
+          .willReturn(ok("{}"))
+      )
+
+      val result = intercept[JsResultException] {
+        await(sut.fuelStations(1).value)
+      }
+
+      result mustBe a[JsResultException]
+    }
+  }
+
+  "fuelPrices" must {
+    "return a list of fuel prices" in {
+
+      when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
+      when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+
+      server.stubFor(
+        WireMock
+          .get(urlEqualTo("/api/v1/pfs/fuel-prices?batch-number=1"))
+          .willReturn(ok(fuelPricesOkResponse))
+      )
+
+      val result = sut.fuelPrices(1).value.futureValue
+
+      result mustBe Right(List(
+        FuelPriceForStation("0028acef5f3afc41c7e7d56fb285a940dfb64d6fea01cb4accd79c148321112d", None, "Trading name 1", List(FuelPrice(159.9, "E5", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), FuelPrice(132.9, "E10", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")))),
+        FuelPriceForStation("01da92125c3751767044d06b202f45da5933f0e16e256fa3e98a16af8386308d", Some(""), "trading name 2", List(FuelPrice(159.9, "E5", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))))
+      ))
+    }
+
+    "skip invalid fuel prices" in {
+
+      when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
+      when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+
+      server.stubFor(
+        WireMock
+          .get(urlEqualTo("/api/v1/pfs/fuel-prices?batch-number=1"))
+          .willReturn(ok(fuelPricesOkResponse.replace("\"01da92125c3751767044d06b202f45da5933f0e16e256fa3e98a16af8386308d\"", "null")))
+      )
+
+      val result = sut.fuelPrices(1).value.futureValue
+
+      result mustBe Right(List(
+        FuelPriceForStation("0028acef5f3afc41c7e7d56fb285a940dfb64d6fea01cb4accd79c148321112d", None, "Trading name 1", List(FuelPrice(159.9, "E5", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), FuelPrice(132.9, "E10", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))))
+      ))
+    }
+
+    "return an UpstreamErrorResponse" in {
+
+      when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
+      when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+
+      server.stubFor(
+        WireMock
+          .get(urlEqualTo("/api/v1/pfs/fuel-prices?batch-number=1"))
+          .willReturn(notFound())
+      )
+
+      val result = sut.fuelPrices(1).value.futureValue
+
+      result mustBe a[Left[UpstreamErrorResponse, ?]]
+    }
+
+    "throw an exception" in {
+
+      when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
+      when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+
+      server.stubFor(
+        WireMock
+          .get(urlEqualTo("/api/v1/pfs/fuel-prices?batch-number=1"))
+          .willReturn(ok("{}"))
+      )
+
+      val result = intercept[JsResultException] {
+        await(sut.fuelPrices(1).value)
+      }
+
+      result mustBe a[JsResultException]
     }
   }
 }
