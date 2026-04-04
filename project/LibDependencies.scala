@@ -19,7 +19,7 @@ object LibDependencies {
     "org.scalatestplus.play"  %% "scalatestplus-play" % "7.0.2",
     "org.scalatestplus"       %% "mockito-5-10"       % "3.2.18.0",
     "org.jsoup"               %  "jsoup"              % "1.22.1",
-    "org.wiremock"            % "wiremock"            % "3.4.2"
+    "org.wiremock"            % "wiremock"            % "3.13.2"
   ).map(_ % Test)
 
   val all: Seq[ModuleID]  = libraryDependenciesCompile ++ libraryDependenciesTest
