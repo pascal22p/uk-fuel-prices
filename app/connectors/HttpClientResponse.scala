@@ -31,7 +31,7 @@ class HttpClientResponse @Inject()(implicit ec: ExecutionContext) extends Loggin
   ): EitherT[Future, UpstreamErrorResponse, HttpResponse] =
     EitherT(response.map {
       case Right(success) => Right(success)
-      case Left(error) if error.statusCode >= 500 =>
+      case Left(error) if error.statusCode >= INTERNAL_SERVER_ERROR =>
         logger.error(error.message)
         Left(error)
       case Left(error) if error.statusCode == NOT_FOUND =>
