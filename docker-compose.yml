@@ -1,0 +1,37 @@
+services:
+  genealogy:
+    platform: linux/amd64
+    image: pascal22p/uk-fuel-prices:latest-snapshot
+    container_name: ukufuelprices
+    restart: unless-stopped
+    environment:
+      APP_SECRET: ${APP_SECRET}
+      DB_URL: ${DB_URL}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      PYROSCOPE_AGENT_ENABLED: true
+      PYROSCOPE_APPLICATION_NAME: ${PYROSCOPE_NAME}
+      PYROSCOPE_PROFILER_ALLOC: 512k
+      PYROSCOPE_SERVER_ADDRESS: ${PYROSCOPE_SERVER_ADDRESS}
+      PYROSCOPE_BASIC_AUTH_USER: ${PYROSCOPE_BASIC_AUTH_USER}
+      PYROSCOPE_BASIC_AUTH_PASSWORD: ${PYROSCOPE_BASIC_AUTH_PASSWORD}
+      PLAY_FILTERS_HOSTS: uk-fuel-prices.parois.net
+      PROTOCOL: https://
+      APP_NAME: Parois.net
+      JAVA_OPTS: "-Dlogger.file=/opt/logback.xml"
+      PARTIAL_UPDATE_IS_ENABLED: true
+      PARTIAL_UPDATE_JOB_INTERVAL_IN_MINUTES: 10
+      PARTIAL_UPDATE_SCHEDULER_INTERVAL_IN_MINUTES: 1
+      PARTIAL_UPDATE_START_DELAY_IN_SECONDS: 600
+      FULL_UPDATE_IS_ENABLED: true
+      FULL_UPDATE_SCHEDULER_INTERVAL_IN_MINUTES: 120
+    ports:
+      - 127.0.0.1:9234:9234
+    volumes:
+      - ./Config/logback.xml:/opt/logback.xml:ro
+    logging:
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+        max-size: "50m"
+        max-file: "3"
+
