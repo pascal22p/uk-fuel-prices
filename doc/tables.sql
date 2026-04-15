@@ -25,9 +25,31 @@ CREATE TABLE `fuel_stations` (
                                  `postcode` varchar(128) NOT NULL,
                                  `latitude` double NOT NULL,
                                  `longitude` double NOT NULL,
-                                 UNIQUE KEY `nodeId` (`nodeId`),
+                                 `lastUpdated` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE current_timestamp(),
+                                 PRIMARY KEY (`nodeId`),
                                  KEY `postcode` (`postcode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `fuel_prices`;
+CREATE TABLE `fuel_prices` (
+                               `nodeId` varchar(128) NOT NULL,
+                               `price` double NOT NULL,
+                               `fuelType` varchar(128) NOT NULL,
+                               `priceLastUpdated` timestamp NOT NULL,
+                               `priceChangeEffectiveTimestamp` timestamp NOT NULL,
+                               PRIMARY KEY (`nodeId`),
+                               CONSTRAINT `fuel_prices_ibfk_1` FOREIGN KEY (`nodeId`) REFERENCES `fuel_stations` (`nodeId`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `fuel_sessions`;
+CREATE TABLE `fuel_sessions` (
+                                  `sessionId` varchar(36) NOT NULL,
+                                  `sessionData` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`sessionData`)),
+                                  `timeStamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                                  PRIMARY KEY (`sessionId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP EVENT IF EXISTS `delete_sessions`;
+CREATE EVENT `delete_sessions` ON SCHEDULE EVERY 1 MINUTE STARTS '2024-07-15 14:50:12' ON COMPLETION NOT PRESERVE ENABLE DO DELETE FROM fuel_sessions
+    WHERE UNIX_TIMESTAMP(timestamp) < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 1 HOUR));
 -- 2026-04-02 15:24:48 UTC

@@ -13,9 +13,21 @@ class AppConfig @Inject() (configuration: Configuration) {
     val port = configuration.get[Int](s"$servicesRoot.$serviceName.port")
     s"$protocol://$host:$port"
   }
+  
+  val appName: String = configuration.get[String]("appName")
+  val commitHash: String = sys.props.getOrElse("git.commit.hash", "unknown")
 
   val clientId: String     = configuration.get[String]("microservice.services.fuel-finder.client-id")
   val clientSecret: String = configuration.get[String]("microservice.services.fuel-finder.client-secret")
 
   val fuelApiHost: String = baseUrl("fuel-finder")
+
+  val jobPartialIsEnabled: Boolean = configuration.get[Boolean]("scheduler.partial-update.isEnabled")
+  val jobPartialUpdateInterval: Int = configuration.get[Int]("scheduler.partial-update.jobIntervalInMinutes")
+  val schedulerPartialUpdateStartDelay: Int = configuration.get[Int]("scheduler.partial-update.startDelayInSeconds")
+  val schedulerPartialUpdateInterval: Int = configuration.get[Int]("scheduler.partial-update.schedulerIntervalInMinutes")
+
+  val jobFullUpdateIsEnabled: Boolean = configuration.get[Boolean]("scheduler.full-update.isEnabled")
+  val schedulerFullUpdateStartDelay: Int = configuration.get[Int]("scheduler.full-update.startDelayInSeconds")
+  val schedulerFullUpdateInterval: Int = configuration.get[Int]("scheduler.full-update.schedulerIntervalInMinutes")
 }

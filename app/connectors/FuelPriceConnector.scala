@@ -11,6 +11,9 @@ import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+
 
 @Singleton
 class FuelPriceConnector @Inject()(
@@ -20,9 +23,12 @@ class FuelPriceConnector @Inject()(
                                     httpClientResponse: HttpClientResponse)
                                   (implicit ec: ExecutionContext) extends LoggingWithRequest {
 
-  def fuelStations(batchNumber: Int)(implicit hc: HeaderCarrier): EitherT[Future, UpstreamErrorResponse, Seq[FuelStation]] = {
-    val url = s"${appConfig.fuelApiHost}/api/v1/pfs?batch-number=$batchNumber"
-    logger.info(s"Calling pfs (Petrol Fuel Station) api with batch number $batchNumber")
+  private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+
+  def fuelStations(batchNumber: Int, effectiveStartDate : Option[LocalDateTime] = None)(implicit hc: HeaderCarrier): EitherT[Future, UpstreamErrorResponse, Seq[FuelStation]] = {
+    val startDate = effectiveStartDate.fold("") { date => s"&effective-start-timestamp=${date.format(formatter)}"}
+    val url = s"${appConfig.fuelApiHost}/api/v1/pfs?batch-number=$batchNumber$startDate"
+    logger.info(s"Calling pfs (Petrol Fuel Station) api at $url")
 
     def getPfs(token: String): EitherT[Future, UpstreamErrorResponse, Seq[FuelStation]] = {
       httpClientResponse.read(
@@ -52,9 +58,10 @@ class FuelPriceConnector @Inject()(
     } yield fuelStations
   }
 
-  def fuelPrices(batchNumber: Int)(implicit hc: HeaderCarrier): EitherT[Future, UpstreamErrorResponse, Seq[FuelPriceForStation]] = {
-    val url = s"${appConfig.fuelApiHost}/api/v1/pfs/fuel-prices?batch-number=$batchNumber"
-    logger.info(s"Calling fuel prices api with batch number $batchNumber")
+  def fuelPrices(batchNumber: Int, effectiveStartDate: Option[LocalDateTime] = None)(implicit hc: HeaderCarrier): EitherT[Future, UpstreamErrorResponse, Seq[FuelPriceForStation]] = {
+    val startDate = effectiveStartDate.fold("") { date => s"&effective-start-timestamp=${date.format(formatter)}"}
+    val url = s"${appConfig.fuelApiHost}/api/v1/pfs/fuel-prices?batch-number=$batchNumber$startDate"
+    logger.info(s"Calling fuel prices api at $url")
 
     def getFuelPrices(token: String): EitherT[Future, UpstreamErrorResponse, Seq[FuelPriceForStation]] = {
       httpClientResponse.read(

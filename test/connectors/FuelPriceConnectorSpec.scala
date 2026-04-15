@@ -13,6 +13,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import play.api.libs.json.JsResultException
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
+import models.FuelType
 
 import java.time.Instant
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -399,8 +400,12 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
       val result = sut.fuelPrices(1).value.futureValue
 
       result mustBe Right(List(
-        FuelPriceForStation("0028acef5f3afc41c7e7d56fb285a940dfb64d6fea01cb4accd79c148321112d", None, "Trading name 1", List(FuelPrice(159.9, "E5", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), FuelPrice(132.9, "E10", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")))),
-        FuelPriceForStation("01da92125c3751767044d06b202f45da5933f0e16e256fa3e98a16af8386308d", Some(""), "trading name 2", List(FuelPrice(159.9, "E5", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))))
+        FuelPriceForStation("0028acef5f3afc41c7e7d56fb285a940dfb64d6fea01cb4accd79c148321112d", None, "Trading name 1", 
+          List(
+            FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), 
+            FuelPrice(132.9, FuelType.E10, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))
+          )),
+        FuelPriceForStation("01da92125c3751767044d06b202f45da5933f0e16e256fa3e98a16af8386308d", Some(""), "trading name 2", List(FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))))
       ))
     }
 
@@ -418,7 +423,11 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
       val result = sut.fuelPrices(1).value.futureValue
 
       result mustBe Right(List(
-        FuelPriceForStation("0028acef5f3afc41c7e7d56fb285a940dfb64d6fea01cb4accd79c148321112d", None, "Trading name 1", List(FuelPrice(159.9, "E5", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), FuelPrice(132.9, "E10", Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))))
+        FuelPriceForStation("0028acef5f3afc41c7e7d56fb285a940dfb64d6fea01cb4accd79c148321112d", None, "Trading name 1", 
+          List(
+            FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), 
+            FuelPrice(132.9, FuelType.E10, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))
+          ))
       ))
     }
 

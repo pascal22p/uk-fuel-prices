@@ -48,7 +48,7 @@ class OAuthConnector @Inject()(
       "client_secret" -> Seq(appConfig.clientSecret)
     )
 
-    logger.info(s"client id: ${appConfig.clientId.take(10)}, secret id: ${appConfig.clientSecret.take(10)}")
+    logger.info(s"client id: ${appConfig.clientId.take(10)}***, secret id: ${appConfig.clientSecret.take(10)}***")
 
     httpClientResponse.read(http.post(url"${appConfig.fuelApiHost}/api/v1/oauth/generate_access_token")
       .withBody(formData)

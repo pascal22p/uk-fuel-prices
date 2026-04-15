@@ -1,27 +1,24 @@
 package controllers
 
+import actions.AuthAction
+
 import javax.inject.*
 import play.api.*
+import play.api.i18n.I18nSupport
 import play.api.mvc.*
-import services.FuelPriceService
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.http.HeaderCarrierConverter
+import views.html.IndexView
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 @Singleton
 class HomeController @Inject()(
                                 val controllerComponents: ControllerComponents,
-                                fuelPriceService: FuelPriceService
-                              )(
-                              implicit ec: ExecutionContext
-) extends BaseController {
+                                authAction: AuthAction,
+                                indexView: IndexView
+                              ) extends BaseController with I18nSupport{
 
-  def index() = Action.async { implicit request: Request[AnyContent] =>
-    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
-    fuelPriceService.uploadAllFuelPrices().fold(
-      error => InternalServerError(s"Call to fuel API went wrong: $error"),
-        _   => Ok(views.html.index())
-    )
+  def index() = authAction.async { implicit authenticatedRequest =>
+    //implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(authenticatedRequest, authenticatedRequest.session)
+    Future.successful(Ok(indexView()))
   }
 }

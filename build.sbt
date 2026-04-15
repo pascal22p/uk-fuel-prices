@@ -84,8 +84,7 @@ lazy val dockerBuildxSettings = Seq(
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
   Seq(
-    ScoverageKeys.coverageExcludedPackages := ".*Reverse.*",
-    ScoverageKeys.coverageExcludedFiles := ".*Routes.*",
+    ScoverageKeys.coverageExcludedPackages := "<empty>;Reverse.*;.*Routes.*;",
     ScoverageKeys.coverageMinimumStmtTotal := 89.5,
     ScoverageKeys.coverageFailOnMinimum := false,
     ScoverageKeys.coverageHighlighting := true
