@@ -1,5 +1,6 @@
 package testUtils
 
+import config.JobSchedulerModule
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.{IntegrationPatience, ScalaFutures}
 import org.scalatestplus.mockito.MockitoSugar
@@ -20,6 +21,7 @@ trait BaseSpec
 
   protected def localGuiceApplicationBuilder(): GuiceApplicationBuilder =
     GuiceApplicationBuilder()
+      .disable[JobSchedulerModule]
 
   implicit override lazy val app: Application = localGuiceApplicationBuilder().build()
 
