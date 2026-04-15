@@ -1,8 +1,8 @@
 services:
-  genealogy:
+  ukfuelprices:
     platform: linux/amd64
     image: pascal22p/uk-fuel-prices:latest-snapshot
-    container_name: ukufuelprices
+    container_name: ukfuelprices
     restart: unless-stopped
     environment:
       APP_SECRET: ${APP_SECRET}
