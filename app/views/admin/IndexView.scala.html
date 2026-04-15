@@ -1,0 +1,12 @@
+@import uk.gov.hmrc.govukfrontend.views.Implicits.*
+
+@this(main: Main)
+
+@()(implicit request: AuthenticatedRequest[?], messages: Messages)
+
+@main(None) {
+  <ul class="govuk-list">
+    <li><a href="@controllers.admin.routes.AdminController.updateFuelPrices()">Update fuel prices</a></li>
+    <li><a href="@controllers.admin.routes.AdminController.updateFuelStations()">Update fuel stations</a></li>
+  </ul>
+}

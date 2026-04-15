@@ -51,12 +51,12 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
         | VALUES ({nodeId}, {price}, {fuelType}, {priceLastUpdated}, {priceChangeEffectiveTimestamp})
           """.stripMargin
 
-    val parameters = fuelStations.map { station =>
-      station.fuelPrices.flatMap { fuel =>
+    val parameters = fuelStations.flatMap { station =>
+      station.fuelPrices.map { fuel =>
         Seq[NamedParameter](
           "nodeId" -> station.nodeId,
           "price" -> fuel.price,
-          "fuelType" -> fuel.fuelType,
+          "fuelType" -> s"${fuel.fuelType}",
           "priceLastUpdated" -> fuel.priceLastUpdated,
           "priceChangeEffectiveTimestamp" -> fuel.priceChangeEffectiveTimestamp
         )

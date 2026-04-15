@@ -1,0 +1,4 @@
+
+GET     /                                   controllers.admin.AdminController.index
+GET     /update-fuel-prices                 controllers.admin.AdminController.updateFuelPrices()
+GET     /update-fuel-stations               controllers.admin.AdminController.updateFuelStations()

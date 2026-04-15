@@ -1,0 +1,10 @@
+@import uk.gov.hmrc.govukfrontend.views.Implicits.*
+
+@this(main: Main)
+
+@()(implicit request: AuthenticatedRequest[?], messages: Messages)
+
+@main(None) {
+  <h2 class="govuk-heading-m">Search fuel prices by postcode</h2>
+  <a class="govuk-link" href="@controllers.routes.TableController.index("NE7")">Get prices for postcode NE7</a>
+}

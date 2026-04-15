@@ -1,0 +1,9 @@
+@import uk.gov.hmrc.govukfrontend.views.Implicits.*
+
+@this(main: Main)
+
+@()(implicit request: AuthenticatedRequest[?], messages: Messages)
+
+@main(None) {
+    <p class="govuk-body">Fuel prices and/or fuel stations have been updated</p>
+}

@@ -1,0 +1,29 @@
+@import uk.gov.hmrc.govukfrontend.views.Implicits.*
+@import uk.gov.hmrc.govukfrontend.views.html.components.GovukTable
+@import models.FuelPriceForStation
+
+@this(main: Main,
+        govukTable: GovukTable)
+
+@(stations: Seq[FuelPriceForStation], postcode: String)(implicit request: AuthenticatedRequest[?], messages: Messages)
+
+@main(caption = Some(s"Postcode $postcode")) {
+      @govukTable(Table(
+        rows = stations.flatMap { station =>
+          station.fuelPrices.zipWithIndex.map { case (fuel, index) =>
+            Seq(
+              TableRow(content = if(index == 0) Text(s"${station.tradingName}") else Text("")),
+              TableRow(content = Text(fuel.fuelType.displayText)),
+              TableRow(content = Text(s"${fuel.price}")),
+              TableRow(content = Text(s"${fuel.formattedPriceChangeEffectiveTimestamp}"))
+            )
+          }
+        },
+        head = Some(Seq(HeadCell(content = Text("Name")), HeadCell(content = Text("Fuel type")), HeadCell(content = Text("Fuel price")), HeadCell(content = Text("Last updated")))),
+        caption = None,
+        captionClasses = "",
+        firstCellIsHeader = true,
+        classes = "",
+        attributes = Map.empty
+      ))
+    }

@@ -5,8 +5,9 @@ import play.api.inject.{Binding, Module}
 import uk.gov.hmrc.http.client.HttpClientV2
 
 class AppModules extends Module {
-  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[?]] =
+  override def bindings(environment: Environment, configuration: Configuration): Seq[Binding[?]] = {
     Seq(
       bind[HttpClientV2].toProvider[HttpClientV2Provider]
     )
+  }
 }
