@@ -22,6 +22,11 @@ trait BaseSpec
   protected def localGuiceApplicationBuilder(): GuiceApplicationBuilder =
     GuiceApplicationBuilder()
       .disable[JobSchedulerModule]
+      .configure(
+        "scheduler.partial-update.isEnabled" -> false,
+        "scheduler.partial-update.startDelayInSeconds" -> 2000,
+        "scheduler.partial-update.schedulerIntervalInMinutes" -> 2000
+      )
 
   implicit override lazy val app: Application = localGuiceApplicationBuilder().build()
 

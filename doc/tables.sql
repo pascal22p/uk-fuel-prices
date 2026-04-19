@@ -35,13 +35,15 @@ CREATE TABLE `fuel_locks` (
 
 DROP TABLE IF EXISTS `fuel_prices`;
 CREATE TABLE `fuel_prices` (
+                               `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                                `nodeId` varchar(128) NOT NULL,
                                `price` double NOT NULL,
                                `fuelType` varchar(128) NOT NULL,
                                `priceLastUpdated` timestamp NOT NULL,
                                `priceChangeEffectiveTimestamp` timestamp NOT NULL,
                                `lastUpdated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-                               PRIMARY KEY (`nodeId`,`fuelType`),
+                               PRIMARY KEY (`id`),
+                               UNIQUE KEY `uq_price_history` (`nodeId`,`fuelType`,`priceLastUpdated`,`priceChangeEffectiveTimestamp`),
                                KEY `nodeId` (`nodeId`),
                                CONSTRAINT `fuel_prices_ibfk_1` FOREIGN KEY (`nodeId`) REFERENCES `fuel_stations` (`nodeId`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

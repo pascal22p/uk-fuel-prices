@@ -15,7 +15,8 @@
               TableRow(content = if(index == 0) Text(s"${station.tradingName}") else Text("")),
               TableRow(content = Text(fuel.fuelType.displayText)),
               TableRow(content = Text(s"${fuel.price}")),
-              TableRow(content = Text(s"${fuel.formattedPriceChangeEffectiveTimestamp}"))
+              TableRow(content = Text(s"${fuel.formattedPriceChangeEffectiveTimestamp}")),
+              TableRow(content = Text(s"${fuel.priceLastUpdated}"))
             )
           }
         },

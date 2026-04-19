@@ -26,8 +26,4 @@ class AppConfig @Inject() (configuration: Configuration) {
   val jobPartialUpdateInterval: Int = configuration.get[Int]("scheduler.partial-update.jobIntervalInMinutes")
   val schedulerPartialUpdateStartDelay: Int = configuration.get[Int]("scheduler.partial-update.startDelayInSeconds")
   val schedulerPartialUpdateInterval: Int = configuration.get[Int]("scheduler.partial-update.schedulerIntervalInMinutes")
-
-  val jobFullUpdateIsEnabled: Boolean = configuration.get[Boolean]("scheduler.full-update.isEnabled")
-  val schedulerFullUpdateStartDelay: Int = configuration.get[Int]("scheduler.full-update.startDelayInSeconds")
-  val schedulerFullUpdateInterval: Int = configuration.get[Int]("scheduler.full-update.schedulerIntervalInMinutes")
 }
