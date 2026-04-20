@@ -23,6 +23,11 @@ class OAuthConnector @Inject()(
 
   private val ExpirySafetyBufferMillis = 30 * 1000 // 30 seconds buffer
 
+  def invalidateToken(): Unit = {
+    cachedToken = None
+    ()
+  }
+  
   def getValidToken()(implicit hc: HeaderCarrier): EitherT[Future, UpstreamErrorResponse, String] = {
     cachedToken match {
       case Some(token) if !isExpired(token) =>

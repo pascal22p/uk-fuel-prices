@@ -20,8 +20,17 @@ class TableController @Inject()(
                               )(implicit ec: ExecutionContext) extends BaseController with I18nSupport{
 
   def index(postcode: String) = authAction.async { implicit authenticatedRequest =>
-    fuelPriceService.getFuelPriceFromPostcode(postcode).map { fuelPrices =>
-      val fuelPricesSorted = fuelPrices.sortBy(_.fuelPrices.find(fp => s"${fp.fuelType}" == s"${FuelType.E10}").map(_.price))
+    fuelPriceService.getFuelPriceFromPostcode(postcode).map { fuelStations =>
+      val fuelPricesSorted = fuelStations.map { fuelStation =>
+        // only keep the latest price for each fuel type
+        fuelStation.copy( fuelPrices = fuelStation.fuelPrices
+          .groupBy(_.fuelType)
+          .values
+          .map(_.maxBy(_.priceLastUpdated))
+          .toSeq)
+      }
+        // sort fuel stations by lowest price for E10
+        .sortBy(_.fuelPrices.find(fp => s"${fp.fuelType}" == s"${FuelType.E10}").map(_.price))
       Ok(tableView(fuelPricesSorted, postcode))
     }
   }

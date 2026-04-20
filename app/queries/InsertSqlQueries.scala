@@ -12,10 +12,28 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
     extends LoggingWithRequest {
 
   def insertStations(fuelStations: Seq[FuelStation]): Future[Int] = Future {
-    val sqlStatement = """REPLACE INTO `fuel_stations`
-                         | (`nodeId`, `tradingName`, `isSameTradingAndBrandName`, `brandName`, `temporaryClosure`, `permanentClosure`, `isMotorwayServiceStation`, `isSupermarketServiceStation`, `fuelTypes`, `addressLine1`, `addressLine2`, `city`, `country`, `county`, `postcode`, `latitude`, `longitude`)
-                         | VALUES ({nodeId}, {tradingName}, {isSameTradingAndBrandName}, {brandName}, {temporaryClosure}, {permanentClosure}, {isMotorwayServiceStation}, {isSupermarketServiceStation}, {fuelTypes}, {addressLine1}, {addressLine2}, {city}, {country}, {county}, {postcode}, {latitude}, {longitude})
-          """.stripMargin
+    val sqlStatement =
+      """INSERT INTO `fuel_stations`
+        | (`nodeId`, `tradingName`, `isSameTradingAndBrandName`, `brandName`, `temporaryClosure`, `permanentClosure`, `isMotorwayServiceStation`, `isSupermarketServiceStation`, `fuelTypes`, `addressLine1`, `addressLine2`, `city`, `country`, `county`, `postcode`, `latitude`, `longitude`)
+        | VALUES ({nodeId}, {tradingName}, {isSameTradingAndBrandName}, {brandName}, {temporaryClosure}, {permanentClosure}, {isMotorwayServiceStation}, {isSupermarketServiceStation}, {fuelTypes}, {addressLine1}, {addressLine2}, {city}, {country}, {county}, {postcode}, {latitude}, {longitude})
+        | ON DUPLICATE KEY UPDATE
+        |   `tradingName` = VALUES(`tradingName`),
+        |   `isSameTradingAndBrandName` = VALUES(`isSameTradingAndBrandName`),
+        |   `brandName` = VALUES(`brandName`),
+        |   `temporaryClosure` = VALUES(`temporaryClosure`),
+        |   `permanentClosure` = VALUES(`permanentClosure`),
+        |   `isMotorwayServiceStation` = VALUES(`isMotorwayServiceStation`),
+        |   `isSupermarketServiceStation` = VALUES(`isSupermarketServiceStation`),
+        |   `fuelTypes` = VALUES(`fuelTypes`),
+        |   `addressLine1` = VALUES(`addressLine1`),
+        |   `addressLine2` = VALUES(`addressLine2`),
+        |   `city` = VALUES(`city`),
+        |   `country` = VALUES(`country`),
+        |   `county` = VALUES(`county`),
+        |   `postcode` = VALUES(`postcode`),
+        |   `latitude` = VALUES(`latitude`),
+        |   `longitude` = VALUES(`longitude`)
+        """.stripMargin
 
     val parameters = fuelStations.map { station =>
       Seq[NamedParameter](
@@ -46,10 +64,12 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
 
   def insertFuelPrices(fuelStations: Seq[FuelPriceForStation]): Future[Int] = Future {
     val sqlStatement =
-      """REPLACE INTO `fuel_prices`
+      """INSERT INTO `fuel_prices`
         | (`nodeId`, `price`, `fuelType`, `priceLastUpdated`, `priceChangeEffectiveTimestamp`)
         | VALUES ({nodeId}, {price}, {fuelType}, {priceLastUpdated}, {priceChangeEffectiveTimestamp})
-          """.stripMargin
+        | ON DUPLICATE KEY UPDATE
+        |   `price` = VALUES(`price`)
+        """.stripMargin
 
     val parameters = fuelStations.flatMap { station =>
       station.fuelPrices.map { fuel =>

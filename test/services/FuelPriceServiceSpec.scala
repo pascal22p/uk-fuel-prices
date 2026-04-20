@@ -118,6 +118,9 @@ class FuelPriceServiceSpec extends BaseSpec {
       when(mockDeleteSqlQueries.deleteStations(any())).thenReturn(
         Future.successful(1)
       )
+      when(mockGetSqlQueries.findAbsentFuelStations(any())).thenReturn(
+        Future.successful(Seq.empty)
+      )
 
       val argumentCaptorFuelPrices: ArgumentCaptor[Seq[FuelPriceForStation]] =
         ArgumentCaptor.forClass(classOf[Seq[FuelPriceForStation]])
@@ -149,12 +152,53 @@ class FuelPriceServiceSpec extends BaseSpec {
       when(mockDeleteSqlQueries.deleteStations(any())).thenReturn(
         Future.successful(1)
       )
+      when(mockGetSqlQueries.findAbsentFuelStations(any())).thenReturn(
+        Future.successful(Seq.empty)
+      )
 
       val result = sut.uploadAllFuelPrices().value.futureValue
 
       result mustBe Right(true)
       verify(mockFuelPriceConnector, times(2)).fuelPrices(any(), any())(using any())
       verify(mockInsertSqlQueries, times(1)).insertFuelPrices(any())
+    }
+
+    "Ignore invalid node ids" in {
+      when(mockFuelPriceConnector.fuelPrices(any(), any())(using any())).thenReturn(
+        EitherT.rightT[Future, UpstreamErrorResponse](Seq(
+          FuelPriceForStation("nodeId1", None, "tradingName", Seq(FuelPrice(148.0, FuelType.E10, Instant.now, Instant.now)))
+        )),
+        EitherT.rightT[Future, UpstreamErrorResponse](Seq(
+          FuelPriceForStation("nodeId2", None, "tradingName", Seq(FuelPrice(1.50, FuelType.E10, Instant.now, Instant.now), FuelPrice(1500, FuelType.E10, Instant.now, Instant.now)))
+        )),
+        EitherT.leftT[Future, Seq[FuelPriceForStation]](UpstreamErrorResponse("not found", NOT_FOUND))
+      )
+
+      when(mockInsertSqlQueries.insertFuelPrices(any())).thenReturn(
+        Future.successful(1)
+      )
+
+      when(mockDeleteSqlQueries.deleteFuelPrices(any())).thenReturn(
+        Future.successful(1)
+      )
+      when(mockDeleteSqlQueries.deleteStations(any())).thenReturn(
+        Future.successful(1)
+      )
+      when(mockGetSqlQueries.findAbsentFuelStations(any())).thenReturn(
+        Future.successful(Seq("nodeId2"))
+      )
+
+      val argumentCaptorFuelPrices: ArgumentCaptor[Seq[FuelPriceForStation]] =
+        ArgumentCaptor.forClass(classOf[Seq[FuelPriceForStation]])
+
+      val result = sut.uploadAllFuelPrices().value.futureValue
+
+      result mustBe Right(true)
+      verify(mockFuelPriceConnector, times(3)).fuelPrices(any(), any())(using any())
+      verify(mockInsertSqlQueries, times(2)).insertFuelPrices(argumentCaptorFuelPrices.capture())
+
+      argumentCaptorFuelPrices.getAllValues.asScala.toSeq.flatten.flatMap(_.fuelPrices).map(_.price) mustBe Seq(148.0)
+
     }
 
     "return UpstreamErrorResponse" in {

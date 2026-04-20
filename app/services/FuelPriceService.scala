@@ -4,8 +4,9 @@ import cats.data.EitherT
 import cats.implicits.*
 import connectors.FuelPriceConnector
 import models.FuelPriceForStation
+import play.api.Logging
 import play.api.http.Status.NOT_FOUND
-import queries.{GetSqlQueries, InsertSqlQueries, DeleteSqlQueries}
+import queries.{DeleteSqlQueries, GetSqlQueries, InsertSqlQueries}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
 import java.time.LocalDateTime
@@ -18,7 +19,7 @@ class FuelPriceService @Inject()(
                                 insertSqlQueries: InsertSqlQueries,
                                 getSqlQueries: GetSqlQueries,
                                 deleteSqlQueries: DeleteSqlQueries
-                                )(implicit ec: ExecutionContext) {
+                                )(implicit ec: ExecutionContext) extends Logging {
 
   final def uploadAllFuelStations(batchNumber: Int = 1, effectiveStartDate : Option[LocalDateTime] = None)
                                  (implicit hc: HeaderCarrier)
@@ -61,9 +62,16 @@ class FuelPriceService @Inject()(
             }
           )
         }
-        EitherT.liftF(insertSqlQueries.insertFuelPrices(sanitisedFuels)).flatMap { _ =>
-          uploadAllFuelPrices(batchNumber + 1, effectiveStartDate)
-            .map(_ => true)
+
+        val nodeIds = sanitisedFuels.map(_.nodeId)
+        for {
+          absentNodeIds <- EitherT.liftF[Future, UpstreamErrorResponse, Seq[String]](getSqlQueries.findAbsentFuelStations(nodeIds))
+          validSanitisedFuels = sanitisedFuels.filterNot(fuel => absentNodeIds.contains(fuel.nodeId))
+          _ <- EitherT.liftF[Future, UpstreamErrorResponse, Int](insertSqlQueries.insertFuelPrices(validSanitisedFuels))
+          _ <- uploadAllFuelPrices(batchNumber + 1, effectiveStartDate)
+        } yield {
+          if(absentNodeIds.nonEmpty) logger.error(s"Absent fuel stations: $absentNodeIds")
+          true
         }
     }.transform {
       // not found response. End of the line, returning success.
@@ -81,11 +89,11 @@ class FuelPriceService @Inject()(
       }
     }
   }
-  
+
   def removeOldFuelStations(since: LocalDateTime): Future[Int] =
     deleteSqlQueries.deleteStations(since)
 
   def removeOldFuelPrices(since: LocalDateTime): Future[Int] =
     deleteSqlQueries.deleteFuelPrices(since)
-  
+
 }

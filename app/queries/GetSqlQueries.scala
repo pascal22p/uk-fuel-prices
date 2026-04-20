@@ -44,4 +44,17 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
         .as(FuelPrice.fuelPriceParser.*)
     }
   }(using databaseExecutionContext)
+
+  def findAbsentFuelStations(nodeIds: Seq[String]): Future[Seq[String]] = Future {
+    val result = db.withConnection { implicit conn =>
+      SQL(
+        """SELECT nodeId
+          |FROM fuel_stations
+          |WHERE nodeId IN ({nodeIds})""".stripMargin)
+        .on("nodeIds" -> anorm.SeqParameter(nodeIds, sep = ","))
+        .as(SqlParser.scalar[String].*)
+    }
+    nodeIds.filterNot(result.contains)
+  }(using databaseExecutionContext)
+
 }
