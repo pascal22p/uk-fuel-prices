@@ -2,7 +2,7 @@ package connectors
 
 import cats.data.EitherT
 import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock.{notFound, ok, urlEqualTo}
+import com.github.tomakehurst.wiremock.client.WireMock.{forbidden, notFound, ok, urlEqualTo}
 import config.AppConfig
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -10,7 +10,7 @@ import testUtils.{BaseSpec, WireMockHelper}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import models.{FuelPrice, FuelPriceForStation, FuelStation, FuelStationLocation}
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.when
+import org.mockito.Mockito.{doNothing, times, verify, when}
 import play.api.libs.json.JsResultException
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
 import models.FuelType
@@ -464,5 +464,23 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       result mustBe a[JsResultException]
     }
+
+    "invalidate OAUth token on 403 response" in {
+      when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
+      when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+      doNothing().when(mockOAuthConnector).invalidateToken()
+
+      server.stubFor(
+        WireMock
+          .get(urlEqualTo("/api/v1/pfs/fuel-prices?batch-number=1"))
+          .willReturn(forbidden())
+      )
+
+      val result = sut.fuelPrices(1).value.futureValue
+
+      result mustBe a[Left[UpstreamErrorResponse, ?]]
+      verify(mockOAuthConnector, times(1)).invalidateToken()
+    }
+
   }
 }
