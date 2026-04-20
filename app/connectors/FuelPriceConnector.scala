@@ -3,6 +3,7 @@ package connectors
 import cats.data.EitherT
 import config.AppConfig
 import models.{FuelPriceForStation, FuelStation, LoggingWithRequest}
+import play.api.http.Status.FORBIDDEN
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -32,24 +33,34 @@ class FuelPriceConnector @Inject()(
 
     def getPfs(token: String): EitherT[Future, UpstreamErrorResponse, Seq[FuelStation]] = {
       httpClientResponse.read(
-          httpClient.get(url"$url")
-            .setHeader("Authorization" -> s"Bearer $token")
-            .setHeader("Accept" -> "application/json")
-            .execute[Either[UpstreamErrorResponse, HttpResponse]]
-        ).map { response =>
-        response.json
-          .as[Seq[JsValue]]
-          .zipWithIndex
-          .flatMap { case (item, index) =>
-            item.validate[FuelStation].fold(
-              errors => {
-                logger.error(s"Failed at index $index: $errors")
-                None
-              },
-              station => Some(station)
-            )
+        httpClient.get(url"$url")
+          .setHeader("Authorization" -> s"Bearer $token")
+          .setHeader("Accept" -> "application/json")
+          .execute[Either[UpstreamErrorResponse, HttpResponse]]
+      ).bimap(
+        error => {
+          if (error.statusCode == FORBIDDEN) {
+            oauthConnector.invalidateToken()
+            error
+          } else {
+            error
           }
-      }
+        },
+        response => {
+          response.json
+            .as[Seq[JsValue]]
+            .zipWithIndex
+            .flatMap { case (item, index) =>
+              item.validate[FuelStation].fold(
+                errors => {
+                  logger.error(s"Failed at index $index: $errors")
+                  None
+                },
+                station => Some(station)
+              )
+            }
+        }
+      )
     }
 
     for {
@@ -69,20 +80,30 @@ class FuelPriceConnector @Inject()(
           .setHeader("Authorization" -> s"Bearer $token")
           .setHeader("Accept" -> "application/json")
           .execute[Either[UpstreamErrorResponse, HttpResponse]]
-      ).map { response =>
-        response.json
-          .as[Seq[JsValue]]
-          .zipWithIndex
-          .flatMap { case (item, index) =>
-            item.validate[FuelPriceForStation].fold(
-              errors => {
-                logger.error(s"Failed at index $index: $errors")
-                None
-              },
-              station => Some(station)
-            )
+      ).bimap(
+        error => {
+          if (error.statusCode == FORBIDDEN) {
+            oauthConnector.invalidateToken()
+            error
+          } else {
+            error
           }
-      }
+        },
+        response => {
+          response.json
+            .as[Seq[JsValue]]
+            .zipWithIndex
+            .flatMap { case (item, index) =>
+              item.validate[FuelPriceForStation].fold(
+                errors => {
+                  logger.error(s"Failed at index $index: $errors")
+                  None
+                },
+                station => Some(station)
+              )
+            }
+        }
+      )
     }
 
     for {
