@@ -26,32 +26,47 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
   def findFuelStations(postcode: String): Future[Seq[FuelStation]] = Future {
     db.withConnection { implicit conn =>
       SQL(
-        """SELECT *
+        """SELECT *, HEX(nodeId_bin) as nodeId
           |FROM fuel_stations
           |WHERE postcode LIKE {postcode}""".stripMargin)
         .on("postcode" -> s"$postcode%")
         .as(FuelStation.fuelStationParser.*)
     }
   }(using databaseExecutionContext)
-
-  def findPricesForStation(station: FuelStation): Future[Seq[FuelPrice]] = Future {
+  
+  def getFuelStation(nodeId: String): Future[Option[FuelStation]] = Future {
     db.withConnection { implicit conn =>
       SQL(
-        """SELECT *
-          |FROM fuel_prices
-          |WHERE nodeId = {nodeId}""".stripMargin)
-        .on("nodeId" -> station.nodeId)
+        """SELECT *, HEX(nodeId_bin) as nodeId
+          |FROM fuel_stations
+          |WHERE nodeId_bin = UNHEX({nodeId})""".stripMargin)
+        .on("nodeId" -> nodeId)
+        .as(FuelStation.fuelStationParser.singleOpt)
+    }
+  }(using databaseExecutionContext)
+
+  def findPricesForStation(nodeId: String): Future[Seq[FuelPrice]] = Future {
+    db.withConnection { implicit conn =>
+      SQL(
+        """SELECT fp.*, ft.name AS fuelType
+          |FROM fuel_prices fp
+          |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
+          |WHERE fp.nodeId_bin = UNHEX({nodeId})""".stripMargin
+      )
+        .on("nodeId" -> nodeId)
         .as(FuelPrice.fuelPriceParser.*)
     }
   }(using databaseExecutionContext)
 
   def findAbsentFuelStations(nodeIds: Seq[String]): Future[Seq[String]] = Future {
+    val binaryIds = nodeIds.map(java.util.HexFormat.of().parseHex)
+
     val result = db.withConnection { implicit conn =>
       SQL(
-        """SELECT nodeId
+        """SELECT HEX(nodeId_bin) as nodeId
           |FROM fuel_stations
-          |WHERE nodeId IN ({nodeIds})""".stripMargin)
-        .on("nodeIds" -> anorm.SeqParameter(nodeIds, sep = ","))
+          |WHERE nodeId_bin IN ({nodeIds})""".stripMargin)
+        .on("nodeIds" -> binaryIds)
         .as(SqlParser.scalar[String].*)
     }
     nodeIds.filterNot(result.contains)

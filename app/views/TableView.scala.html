@@ -12,7 +12,7 @@
         rows = stations.flatMap { station =>
           station.fuelPrices.zipWithIndex.map { case (fuel, index) =>
             Seq(
-              TableRow(content = if(index == 0) Text(s"${station.tradingName}") else Text("")),
+              TableRow(content = if(index == 0) HtmlContent(s"""<a href="${controllers.routes.HomeController.fuelStationDetails(station.nodeId).url}">${station.tradingName}""") else Text("")),
               TableRow(content = Text(fuel.fuelType.displayText)),
               TableRow(content = Text(s"${fuel.price}")),
               TableRow(content = Text(s"${fuel.formattedPriceChangeEffectiveTimestamp}"))
