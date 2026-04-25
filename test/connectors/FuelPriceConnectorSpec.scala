@@ -324,9 +324,9 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       result mustBe
         Right(List(
-          FuelStation("9b275ab576eeba3c6677984be15ee22a74e54fdfe8e5ea700e84a03178dc4ac1", "TEST", Some(true), "TEST", Some(false), Some(false), Some(false), Some(false), FuelStationLocation(Some("address line 1"), None, "City", Some("England"), None, "post code", 51.5268585, -0.700361), List("E10", "E5", "HVO", "B10")),
-          FuelStation("4fd9a4c6b48358b9b5c95989fba100fdcbb87c9e909ed4ce1ad96f64ffb8b56a", "TEST FORECOURT 1", Some(true), "Brand name", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line different"), Some(""), "City again", Some("ENGLAND"), Some("EAST YORKSHIRE"), "post code", 51.258503, -3.417567), List("B10")),
-          FuelStation("91bdda1c07fa05110a31639cc66932f9ed8bd388d4f6be542a423365bcfd53e1", "trading name", Some(true), "brand name again", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line 3"), Some("second address line"), "City 3", Some("ENGLAND"), Some("LEICESTERSHIRE"), "postcode 5", 50.503343, -2.12444), List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
+          FuelStation("9B275AB576EEBA3C6677984BE15EE22A74E54FDFE8E5EA700E84A03178DC4AC1", "TEST", Some(true), "TEST", Some(false), Some(false), Some(false), Some(false), FuelStationLocation(Some("address line 1"), None, "City", Some("England"), None, "post code", 51.5268585, -0.700361), List("E10", "E5", "HVO", "B10")),
+          FuelStation("4FD9A4C6B48358B9B5C95989FBA100FDCBB87C9E909ED4CE1AD96F64FFB8B56A", "TEST FORECOURT 1", Some(true), "Brand name", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line different"), Some(""), "City again", Some("ENGLAND"), Some("EAST YORKSHIRE"), "post code", 51.258503, -3.417567), List("B10")),
+          FuelStation("91BDDA1C07FA05110A31639CC66932F9ED8BD388D4F6BE542A423365BCFD53E1", "trading name", Some(true), "brand name again", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line 3"), Some("second address line"), "City 3", Some("ENGLAND"), Some("LEICESTERSHIRE"), "postcode 5", 50.503343, -2.12444), List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
         ))
     }
 
@@ -345,8 +345,8 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       result mustBe
         Right(List(
-          FuelStation("4fd9a4c6b48358b9b5c95989fba100fdcbb87c9e909ed4ce1ad96f64ffb8b56a", "TEST FORECOURT 1", Some(true), "Brand name", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line different"), Some(""), "City again", Some("ENGLAND"), Some("EAST YORKSHIRE"), "post code", 51.258503, -3.417567), List("B10")),
-          FuelStation("91bdda1c07fa05110a31639cc66932f9ed8bd388d4f6be542a423365bcfd53e1", "trading name", Some(true), "brand name again", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line 3"), Some("second address line"), "City 3", Some("ENGLAND"), Some("LEICESTERSHIRE"), "postcode 5", 50.503343, -2.12444), List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
+          FuelStation("4FD9A4C6B48358B9B5C95989FBA100FDCBB87C9E909ED4CE1AD96F64FFB8B56A", "TEST FORECOURT 1", Some(true), "Brand name", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line different"), Some(""), "City again", Some("ENGLAND"), Some("EAST YORKSHIRE"), "post code", 51.258503, -3.417567), List("B10")),
+          FuelStation("91BDDA1C07FA05110A31639CC66932F9ED8BD388D4F6BE542A423365BCFD53E1", "trading name", Some(true), "brand name again", Some(false), None, Some(false), Some(false), FuelStationLocation(Some("address line 3"), Some("second address line"), "City 3", Some("ENGLAND"), Some("LEICESTERSHIRE"), "postcode 5", 50.503343, -2.12444), List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
         ))
     }
 
@@ -400,12 +400,12 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
       val result = sut.fuelPrices(1).value.futureValue
 
       result mustBe Right(List(
-        FuelPriceForStation("0028acef5f3afc41c7e7d56fb285a940dfb64d6fea01cb4accd79c148321112d", None, "Trading name 1", 
+        FuelPriceForStation("0028ACEF5F3AFC41C7E7D56FB285A940DFB64D6FEA01CB4ACCD79C148321112D", None, "Trading name 1",
           List(
             FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), 
             FuelPrice(132.9, FuelType.E10, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))
           )),
-        FuelPriceForStation("01da92125c3751767044d06b202f45da5933f0e16e256fa3e98a16af8386308d", Some(""), "trading name 2", List(FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))))
+        FuelPriceForStation("01DA92125C3751767044D06B202F45DA5933F0E16E256FA3E98A16AF8386308D", Some(""), "trading name 2", List(FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))))
       ))
     }
 
@@ -423,7 +423,7 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
       val result = sut.fuelPrices(1).value.futureValue
 
       result mustBe Right(List(
-        FuelPriceForStation("0028acef5f3afc41c7e7d56fb285a940dfb64d6fea01cb4accd79c148321112d", None, "Trading name 1", 
+        FuelPriceForStation("0028ACEF5F3AFC41C7E7D56FB285A940DFB64D6FEA01CB4ACCD79C148321112D", None, "Trading name 1",
           List(
             FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), 
             FuelPrice(132.9, FuelType.E10, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))

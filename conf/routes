@@ -7,7 +7,6 @@
 
 GET     /                                         controllers.HomeController.index()
 GET     /postcode/:postcode                       controllers.TableController.index(postcode: String)
-GET     /prices-history/svg/:nodeId               controllers.ChartController.svgChart(nodeId: String)
 GET     /prices-history/json/:nodeId              controllers.ChartController.priceHistoryJson(nodeId: String)
 GET     /fuel-station-details/:nodeId             controllers.HomeController.fuelStationDetails(nodeId: String)
 

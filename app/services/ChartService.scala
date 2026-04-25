@@ -1,14 +1,9 @@
 package services
 
-import models.FuelStation
-
 import javax.inject.*
 import play.api.libs.json.{Json, OFormat}
-
-import java.awt.Color
 import queries.GetSqlQueries
 
-import java.io.ByteArrayOutputStream
 import scala.concurrent.{ExecutionContext, Future}
 
 final case class ChartPoint(x: Long, y: Double)

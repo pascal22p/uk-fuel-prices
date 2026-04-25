@@ -20,11 +20,11 @@ class HomeController @Inject()(
                                 stationView: StationView
                               )(implicit ec: ExecutionContext) extends BaseController with I18nSupport{
 
-  def index() = authAction.async { implicit authenticatedRequest =>
+  def index(): Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
     Future.successful(Ok(indexView()))
   }
 
-  def fuelStationDetails(nodeId: String) = authAction.async { implicit authenticatedRequest =>
+  def fuelStationDetails(nodeId: String): Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
     val nodeIdRegex = "^[0-9a-fA-F]{64}$".r
 
     if(nodeIdRegex.matches(nodeId)) {
