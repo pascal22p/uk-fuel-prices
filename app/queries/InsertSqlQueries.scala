@@ -14,8 +14,8 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
   def insertStations(fuelStations: Seq[FuelStation]): Future[Int] = Future {
     val sqlStatement =
       """INSERT INTO `fuel_stations`
-        | (`nodeId`, `tradingName`, `isSameTradingAndBrandName`, `brandName`, `temporaryClosure`, `permanentClosure`, `isMotorwayServiceStation`, `isSupermarketServiceStation`, `fuelTypes`, `addressLine1`, `addressLine2`, `city`, `country`, `county`, `postcode`, `latitude`, `longitude`)
-        | VALUES ({nodeId}, {tradingName}, {isSameTradingAndBrandName}, {brandName}, {temporaryClosure}, {permanentClosure}, {isMotorwayServiceStation}, {isSupermarketServiceStation}, {fuelTypes}, {addressLine1}, {addressLine2}, {city}, {country}, {county}, {postcode}, {latitude}, {longitude})
+        | (`nodeId_bin`, `tradingName`, `isSameTradingAndBrandName`, `brandName`, `temporaryClosure`, `permanentClosure`, `isMotorwayServiceStation`, `isSupermarketServiceStation`, `fuelTypes`, `addressLine1`, `addressLine2`, `city`, `country`, `county`, `postcode`, `latitude`, `longitude`)
+        | VALUES (UNHEX({nodeId}), {tradingName}, {isSameTradingAndBrandName}, {brandName}, {temporaryClosure}, {permanentClosure}, {isMotorwayServiceStation}, {isSupermarketServiceStation}, {fuelTypes}, {addressLine1}, {addressLine2}, {city}, {country}, {county}, {postcode}, {latitude}, {longitude})
         | ON DUPLICATE KEY UPDATE
         |   `tradingName` = VALUES(`tradingName`),
         |   `isSameTradingAndBrandName` = VALUES(`isSameTradingAndBrandName`),
@@ -63,10 +63,21 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
   }(using databaseExecutionContext)
 
   def insertFuelPrices(fuelStations: Seq[FuelPriceForStation]): Future[Int] = Future {
+    val fuelTypeMap: Map[String, Int] = db.withConnection { implicit conn =>
+      SQL(
+        """SELECT id, name
+          |FROM fuel_types""".stripMargin
+      ).as {
+        (SqlParser.get[Int]("id") ~ SqlParser.get[String]("name")).map {
+          case id ~ name => name -> id
+        }.*
+      }
+    }.toMap
+
     val sqlStatement =
       """INSERT INTO `fuel_prices`
-        | (`nodeId`, `price`, `fuelType`, `priceLastUpdated`, `priceChangeEffectiveTimestamp`)
-        | VALUES ({nodeId}, {price}, {fuelType}, {priceLastUpdated}, {priceChangeEffectiveTimestamp})
+        | (`nodeId_bin`, `price`, `fuelTypeId`, `priceLastUpdated`, `priceChangeEffectiveTimestamp`)
+        | VALUES (UNHEX({nodeId}), {price}, {fuelTypeId}, {priceLastUpdated}, {priceChangeEffectiveTimestamp})
         | ON DUPLICATE KEY UPDATE
         |   `price` = VALUES(`price`)
         """.stripMargin
@@ -76,7 +87,7 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
         Seq[NamedParameter](
           "nodeId" -> station.nodeId,
           "price" -> fuel.price,
-          "fuelType" -> s"${fuel.fuelType}",
+          "fuelTypeId" -> fuelTypeMap(s"${fuel.fuelType}"),
           "priceLastUpdated" -> fuel.priceLastUpdated,
           "priceChangeEffectiveTimestamp" -> fuel.priceChangeEffectiveTimestamp
         )

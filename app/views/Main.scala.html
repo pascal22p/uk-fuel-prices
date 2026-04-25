@@ -12,7 +12,7 @@
 )
 
 
-@(caption: Option[String] = None)(contentBlock: Html)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
+@(caption: Option[String] = None, extraHeaders: List[String] = List.empty)(contentBlock: Html)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @timeoutDialog = {
 @hmrcTimeoutDialog(TimeoutDialog(
@@ -68,6 +68,10 @@
 
         @if(authenticatedRequest.localSession.sessionData.userData.isDefined){
             @timeoutDialog
+        }
+
+        @for(header <- extraHeaders) {
+            @Html(header)
         }
 
     </head>

@@ -14,6 +14,7 @@ import uk.gov.hmrc.http.HttpReads.Implicits.*
 
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 
 @Singleton
@@ -56,7 +57,7 @@ class FuelPriceConnector @Inject()(
                   logger.error(s"Failed at index $index: $errors")
                   None
                 },
-                station => Some(station)
+                station => Some(station.copy(nodeId = station.nodeId.toUpperCase(Locale.ENGLISH)))
               )
             }
         }
@@ -99,7 +100,7 @@ class FuelPriceConnector @Inject()(
                   logger.error(s"Failed at index $index: $errors")
                   None
                 },
-                station => Some(station)
+                station => Some(station.copy(nodeId = station.nodeId.toUpperCase(Locale.ENGLISH)))
               )
             }
         }

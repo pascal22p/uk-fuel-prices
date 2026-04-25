@@ -4,13 +4,9 @@ SET NAMES utf8;
 SET time_zone = '+00:00';
 SET foreign_key_checks = 0;
 
-DELIMITER ;;
-
-DROP EVENT IF EXISTS `delete_sessions`;;
+DROP EVENT IF EXISTS `delete_sessions`;
 CREATE EVENT `delete_sessions` ON SCHEDULE EVERY 1 MINUTE STARTS '2024-07-15 14:50:12' ON COMPLETION NOT PRESERVE ENABLE DO DELETE FROM fuel_sessions
-                                                                                                                            WHERE UNIX_TIMESTAMP(timestamp) < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 1 HOUR));;
-
-DELIMITER ;
+    WHERE UNIX_TIMESTAMP(timestamp) < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 1 HOUR));
 
 SET NAMES utf8mb4;
 
@@ -36,16 +32,18 @@ CREATE TABLE `fuel_locks` (
 DROP TABLE IF EXISTS `fuel_prices`;
 CREATE TABLE `fuel_prices` (
                                `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-                               `nodeId` varchar(128) NOT NULL,
-                               `price` double NOT NULL,
-                               `fuelType` varchar(128) NOT NULL,
+                               `nodeId_bin` binary(32) NOT NULL,
+                               `price` float NOT NULL,
+                               `fuelTypeId` tinyint(3) unsigned NOT NULL,
                                `priceLastUpdated` timestamp NOT NULL,
                                `priceChangeEffectiveTimestamp` timestamp NOT NULL,
                                `lastUpdated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
                                PRIMARY KEY (`id`),
-                               UNIQUE KEY `uq_price_history` (`nodeId`,`fuelType`,`priceLastUpdated`,`priceChangeEffectiveTimestamp`),
-                               KEY `nodeId` (`nodeId`),
-                               CONSTRAINT `fuel_prices_ibfk_1` FOREIGN KEY (`nodeId`) REFERENCES `fuel_stations` (`nodeId`) ON DELETE CASCADE ON UPDATE CASCADE
+                               UNIQUE KEY `nodeId_fuelTypeId_priceLastUpdated_priceChangeEffectiveTimestamp` (`nodeId_bin`,`fuelTypeId`,`priceLastUpdated`,`priceChangeEffectiveTimestamp`),
+                               KEY `lastUpdated` (`lastUpdated`),
+                               KEY `fk_fuel_type` (`fuelTypeId`),
+                               CONSTRAINT `fk_fuel_type` FOREIGN KEY (`fuelTypeId`) REFERENCES `fuel_types` (`id`),
+                               CONSTRAINT `fuel_prices_ibfk_1` FOREIGN KEY (`nodeId_bin`) REFERENCES `fuel_stations` (`nodeId_bin`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -60,7 +58,7 @@ CREATE TABLE `fuel_sessions` (
 
 DROP TABLE IF EXISTS `fuel_stations`;
 CREATE TABLE `fuel_stations` (
-                                 `nodeId` varchar(128) NOT NULL,
+                                 `nodeId_bin` binary(32) NOT NULL,
                                  `tradingName` varchar(128) NOT NULL,
                                  `isSameTradingAndBrandName` tinyint(1) DEFAULT NULL,
                                  `brandName` varchar(128) NOT NULL,
@@ -78,9 +76,18 @@ CREATE TABLE `fuel_stations` (
                                  `latitude` double NOT NULL,
                                  `longitude` double NOT NULL,
                                  `lastUpdated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-                                 PRIMARY KEY (`nodeId`),
+                                 PRIMARY KEY (`nodeId_bin`),
                                  KEY `postcode` (`postcode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
--- 2026-04-15 09:14:26 UTC
+DROP TABLE IF EXISTS `fuel_types`;
+CREATE TABLE `fuel_types` (
+                              `id` tinyint(3) unsigned NOT NULL AUTO_INCREMENT,
+                              `name` varchar(12) DEFAULT NULL,
+                              PRIMARY KEY (`id`),
+                              UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+
+-- 2026-04-25 22:37:21 UTC

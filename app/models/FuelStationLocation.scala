@@ -12,7 +12,11 @@ final case class FuelStationLocation(
                      postcode: String,
                      latitude: Double,
                      longitude: Double
-                   )
+                   ) {
+  def fullAddress: String = {
+    List(addressLine1, addressLine2, Some(city), Some(postcode)).flatten.mkString(", ")
+  }
+}
 
 object FuelStationLocation {
   implicit val fuelStationLocationReads: Reads[FuelStationLocation] = (

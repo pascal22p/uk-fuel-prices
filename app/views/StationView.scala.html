@@ -1,0 +1,124 @@
+@import uk.gov.hmrc.govukfrontend.views.Implicits.*
+@import uk.gov.hmrc.govukfrontend.views.html.components.GovukTable
+@import models.FuelStation
+
+@this(main: Main)
+
+@(station: FuelStation)(implicit request: AuthenticatedRequest[?], messages: Messages)
+
+@headers = @{
+    List(
+        """<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>""",
+        """<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>""",
+        """<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />""",
+        """<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>"""
+    )
+}
+
+@main(caption = Some(s"${station.tradingName}"), extraHeaders = headers) {
+
+    <p class="govuk-body">@station.location.fullAddress</p>
+
+    <div class="govuk-grid-row">
+    <div class="govuk-grid-column-two-thirds">
+        <div id="map"></div>
+    </div>
+    <style>
+            #map {
+                height: 400px;
+                width: 100%;
+            }
+    </style>
+    <script>
+            const lat = @station.location.latitude;
+            const lng = @station.location.longitude;
+
+            // Create map centered at coordinates
+            const map = L.map('map').setView([lat, lng], 13);
+
+            // Add OpenStreetMap tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Add marker (pin)
+            L.marker([lat, lng])
+                    .addTo(map)
+                    .bindPopup("@station.tradingName")
+                    .openPopup();
+    </script>
+    </div>
+
+    <div class="govuk-grid-row" style="margin-top: 20px">
+    <div class="govuk-grid-column-two-thirds">
+        <h2 class="govuk-heading-m">Prices history</h2>
+        <canvas id="fuelChart"></canvas>
+    </div>
+
+    <script>
+            fetch("@routes.ChartController.priceHistoryJson(station.nodeId)")
+                    .then(res => res.json())
+                    .then(series => {
+
+                        const colors = [
+                            "#d4351c", // GOV.UK red
+                            "#1d70b8", // blue
+                            "#00703c", // green
+                            "#6f777b", // grey
+                            "#0b0c0c"  // black
+                        ];
+
+                        const datasets = series.map((s, i) => ({
+                            label: s.name,
+                            data: s.data.map(p => ({ x: p.x, y: p.y })),
+                            borderColor: colors[i % colors.length],
+                            backgroundColor: colors[i % colors.length],
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            tension: 0.2
+                        }));
+
+                        new Chart(document.getElementById('fuelChart'), {
+                            type: 'line',
+                            data: { datasets },
+                            options: {
+                                responsive: true,
+                                parsing: false,
+
+                                scales: {
+                                    x: {
+                                        type: 'time',
+                                        time: {
+                                            unit: 'day'
+                                        },
+                                        ticks: {
+                                            maxRotation: 45,
+                                            minRotation: 45
+                                        }
+                                    },
+                                    y: {
+                                        title: {
+                                            display: true,
+                                            text: 'Price (pence)'
+                                        }
+                                    }
+                                },
+
+                                plugins: {
+                                    legend: {
+                                        position: 'bottom',
+                                        labels: {
+                                            usePointStyle: true
+                                        }
+                                    },
+                                    tooltip: {
+                                        mode: 'nearest',
+                                        intersect: false
+                                    }
+                                }
+                            }
+                        });
+                    });
+    </script>
+    </div>
+}

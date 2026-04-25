@@ -19,7 +19,7 @@ class TableController @Inject()(
                                 tableView: TableView
                               )(implicit ec: ExecutionContext) extends BaseController with I18nSupport{
 
-  def index(postcode: String) = authAction.async { implicit authenticatedRequest =>
+  def index(postcode: String): Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
     fuelPriceService.getFuelPriceFromPostcode(postcode).map { fuelStations =>
       val fuelPricesSorted = fuelStations.map { fuelStation =>
         // only keep the latest price for each fuel type
