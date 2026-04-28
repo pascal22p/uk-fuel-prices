@@ -1,0 +1,57 @@
+@import views.html.helper
+@import views.html.components.Block
+@import models.forms.FuelTypeForm
+@import uk.gov.hmrc.govukfrontend.views.Implicits.*
+
+@this(
+        main: Main,
+        block: Block,
+        formWithCSRF: FormWithCSRF,
+        govukSelect: GovukSelect,
+        govukButton: GovukButton
+)
+
+@(userForm: Form[FuelTypeForm])(implicit request: AuthenticatedRequest[?], messages: Messages)
+
+@main(None) {
+
+    @block(messages("input.fuel.type.title")) {
+
+        @if(userForm.hasGlobalErrors) {
+            @for(error <- userForm.globalErrors) {
+                <span class="error-message">@error.format(messages)</span>
+            }
+        }
+
+        @formWithCSRF(controllers.routes.SearchByPostcodeController.showFuelTypeOnSubmit()) {
+            @govukSelect(
+                Select(
+                    id = "fuelType",
+                    name = "fuelType",
+                    label = Label(
+                        content = Text(messages("input.fuel.type"))
+                    ),
+                    classes = "govuk-!-width-one-half",
+                    items = Seq(
+                        SelectItem(
+                            value = Some(""),
+                            text = messages("site.select.option")
+                        )
+                    ) ++ FuelType.values.toSeq.map { fuelType =>
+                        SelectItem(
+                            value = Some(fuelType.toString),
+                            text = fuelType.displayText
+                        )
+                    }
+                ).withFormField(userForm("fuelType"))
+            )
+
+            @govukButton(
+                Button(
+                    content = Text("Submit")
+                )
+            )
+
+        }
+    }
+}

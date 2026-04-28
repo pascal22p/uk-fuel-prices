@@ -221,7 +221,7 @@ class FuelPriceServiceSpec extends BaseSpec {
   "getFuelPriceFromPostcode" must {
     "return prices for a postcode" in {
       val now = Instant.now
-      when(mockGetSqlQueries.findFuelStations(any())).thenReturn(
+      when(mockGetSqlQueries.getFuelStations(any())).thenReturn(
         Future.successful(Seq(
           FuelStation("nodeId1", "tradingName", None, "brandName", None, None, None, None, FuelStationLocation(None, None, "city", None, None, "postcode", 0.0, 0.0), List.empty),
           FuelStation("nodeId2", "tradingName", None, "brandName", None, None, None, None, FuelStationLocation(None, None, "city", None, None, "postcode", 0.0, 0.0), List.empty)

@@ -12,7 +12,8 @@ object LibDependencies {
     "uk.gov.hmrc"              %% "play-frontend-hmrc-play-30" % "13.4.0",
     "net.logstash.logback"     % "logstash-logback-encoder" % "9.0",
     "uk.gov.hmrc"              %% "http-verbs-play-30"      % "15.8.0",
-    "org.apache.pekko"         %% "pekko-actor"             % play.core.PlayVersion.pekkoVersion
+    "org.apache.pekko"         %% "pekko-actor"             % play.core.PlayVersion.pekkoVersion,
+    "net.sf.geographiclib"     % "GeographicLib-Java"       % "2.1"
   )
 
   val libraryDependenciesTest: Seq[ModuleID] = Seq(

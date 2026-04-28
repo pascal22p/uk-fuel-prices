@@ -4,6 +4,7 @@ import anorm.*
 import cats.data.OptionT
 import models.*
 import play.api.db.Database
+import utils.BoundingBox
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
@@ -23,13 +24,30 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext))
 
-  def findFuelStations(postcode: String): Future[Seq[FuelStation]] = Future {
+  def getFuelStations(postcode: String): Future[Seq[FuelStation]] = Future {
     db.withConnection { implicit conn =>
       SQL(
         """SELECT *, HEX(nodeId_bin) as nodeId
           |FROM fuel_stations
           |WHERE postcode LIKE {postcode}""".stripMargin)
         .on("postcode" -> s"$postcode%")
+        .as(FuelStation.fuelStationParser.*)
+    }
+  }(using databaseExecutionContext)
+
+  def getFuelStations(boundingBox: BoundingBox): Future[Seq[FuelStation]] = Future {
+    db.withConnection { implicit conn =>
+      SQL(
+        """SELECT *, HEX(nodeId_bin) as nodeId
+          |FROM fuel_stations
+          |WHERE latitude > {latitude_min} AND latitude < {latitude_max} AND
+          |  longitude > {longitude_min} AND longitude < {longitude_max}""".stripMargin)
+        .on(
+          "latitude_min" -> boundingBox.minLat, 
+          "latitude_max" -> boundingBox.maxLat, 
+          "longitude_min" -> boundingBox.minLon, 
+          "longitude_max" -> boundingBox.maxLon
+        )
         .as(FuelStation.fuelStationParser.*)
     }
   }(using databaseExecutionContext)
