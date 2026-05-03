@@ -8,6 +8,10 @@ DROP EVENT IF EXISTS `delete_sessions`;
 CREATE EVENT `delete_sessions` ON SCHEDULE EVERY 1 MINUTE STARTS '2024-07-15 14:50:12' ON COMPLETION NOT PRESERVE ENABLE DO DELETE FROM fuel_sessions
     WHERE UNIX_TIMESTAMP(timestamp) < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 1 HOUR));
 
+DROP EVENT IF EXISTS `delete_expired_user_answers`;;
+CREATE EVENT `delete_expired_user_answers` ON SCHEDULE EVERY 10 MINUTE STARTS '2025-12-19 22:48:33' ON COMPLETION NOT PRESERVE ENABLE DO DELETE FROM fuel_user_answers
+    WHERE lastUpdated < NOW() - INTERVAL 45 MINUTE;
+
 SET NAMES utf8mb4;
 
 DROP TABLE IF EXISTS `fuel_admins`;
@@ -26,6 +30,17 @@ CREATE TABLE `fuel_locks` (
                               `id` varchar(128) NOT NULL,
                               `lastUpdate` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
                               PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+
+
+DROP TABLE IF EXISTS `fuel_user_answers`;
+CREATE TABLE `fuel_user_answers` (
+                                      `sessionId` varchar(36) NOT NULL,
+                                      `itemKey` varchar(128) NOT NULL,
+                                      `data` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_uca1400_ai_ci NOT NULL CHECK (json_valid(`data`)),
+                                      `lastUpdated` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00' ON UPDATE current_timestamp(),
+                                      PRIMARY KEY (`sessionId`,`itemKey`),
+                                      KEY `lastUpdated` (`lastUpdated`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
 

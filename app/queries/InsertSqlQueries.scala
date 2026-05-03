@@ -11,6 +11,13 @@ import scala.concurrent.Future
 final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: DatabaseExecutionContext)
     extends LoggingWithRequest {
 
+  /*
+  ST_PointFromText(
+    CONCAT('POINT(', longitude, ' ', latitude, ')'),
+    4326
+  );
+   */
+
   def insertStations(fuelStations: Seq[FuelStation]): Future[Int] = Future {
     val sqlStatement =
       """INSERT INTO `fuel_stations`

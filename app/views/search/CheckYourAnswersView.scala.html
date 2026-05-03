@@ -1,0 +1,52 @@
+@import models.journeyCache.UserAnswersKey
+@import uk.gov.hmrc.govukfrontend.views.html.components.SummaryListRow
+@import play.api.mvc.Call
+@import models.journeyCache.JourneyId
+
+@this(
+    main: Main,
+    govukSummaryList: GovukSummaryList,
+    formWithCSRF: FormWithCSRF,
+    govukButton: GovukButton
+)
+
+@(answers: Map[UserAnswersKey[?], Map[String, String]], messagePrefix: JourneyId, postCall: Call)(implicit messages: Messages, request: AuthenticatedRequest[?])
+
+
+@main(None) {
+
+    @govukSummaryList(
+        SummaryList(
+            rows = answers.toList.sortBy(_._1.index).flatMap { case (userAnswersKey, valuesMap) =>
+                valuesMap.map { case (key, value) =>
+                    SummaryListRow(
+                        key = Key(Text(messages(s"$messagePrefix.$userAnswersKey.$key"))),
+                        value = Value(Text(value)),
+                        classes = "govuk-summary-list__row--no-border govuk-summary-list__row--no-actions",
+                        actions = Some(Actions(
+                            items = Seq(
+                                ActionItem(
+                                    href = userAnswersKey.page.url,
+                                    content = Text(messages("Change"))
+                                )
+                            )
+                        ))
+                    )
+                }
+            },
+            card = Some(Card(
+                title = Some(CardTitle(content = Text(messages("CheckYourAnswers")))),
+                actions = None
+            )),
+            classes = ""
+        )
+    )
+
+    @formWithCSRF(postCall) {
+        @govukButton(
+            Button(
+                content = Text("Confirm and continue ")
+            )
+        )
+    }
+}

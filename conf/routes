@@ -10,6 +10,15 @@ GET     /postcode/:postcode                       controllers.TableController.in
 GET     /prices-history/json/:nodeId              controllers.ChartController.priceHistoryJson(nodeId: String)
 GET     /fuel-station-details/:nodeId             controllers.HomeController.fuelStationDetails(nodeId: String)
 
+GET     /search/postcode                          controllers.SearchByPostcodeController.showPostcodeForm()
+POST    /search/postcode                          controllers.SearchByPostcodeController.showPostcodeOnSubmit()
+GET     /search/fuel-type                         controllers.SearchByPostcodeController.showFuelTypeForm()
+POST    /search/fuel-type                         controllers.SearchByPostcodeController.showFuelTypeOnSubmit()
+GET     /search/radius                            controllers.SearchByPostcodeController.showRadiusForm()
+POST    /search/radius                            controllers.SearchByPostcodeController.showRadiusOnSubmit()
+GET     /search/check-your-answers                controllers.SearchByPostcodeController.checkYourAnswers()
+POST    /search/check-your-answers                controllers.SearchByPostcodeController.submitCheckYourAnswers()
+
 GET     /login                                    controllers.SessionController.loginOnLoad(redirectUrl: String)
 POST    /login                                    controllers.SessionController.loginOnSubmit()
 GET     /logout                                   controllers.SessionController.logoutOnLoad()
