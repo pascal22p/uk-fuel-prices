@@ -32,17 +32,17 @@ class HttpClientResponse @Inject()(implicit ec: ExecutionContext) extends Loggin
     EitherT(response.map {
       case Right(success) => Right(success)
       case Left(error) if error.statusCode >= INTERNAL_SERVER_ERROR =>
-        logger.error(error.message)
+        logger.warn(error.message)
         Left(error)
       case Left(error) if error.statusCode == NOT_FOUND =>
-        logger.info(error.message)
+        logger.debug(error.message)
         Left(error)
       case Left(error) =>
         logger.error(error.message, error)
         Left(error)
     } recover {
       case exception: HttpException =>
-        logger.error(exception.message)
+        logger.warn(exception.message)
         Left(UpstreamErrorResponse(exception.message, BAD_GATEWAY, BAD_GATEWAY))
     })
 
