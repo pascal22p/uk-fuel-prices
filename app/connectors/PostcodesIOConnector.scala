@@ -1,6 +1,7 @@
 package connectors
 
 import cats.data.EitherT
+import config.AppConfig
 import models.LoggingWithRequest
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.http.HttpReads.Implicits.*
@@ -13,12 +14,13 @@ import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class PostcodesIOConnector @Inject()(
+                                    appConfig: AppConfig,
                                     httpClient: HttpClientV2,
                                     httpClientResponse: HttpClientResponse)
                                     (implicit ec: ExecutionContext) extends LoggingWithRequest {
 
   def getCoordinates(postcode: String)(implicit hc: HeaderCarrier): EitherT[Future, UpstreamErrorResponse, (Double, Double)] = {
-    val url = s"https://api.postcodes.io/postcodes/${postcode.replace(" ", "")}"
+    val url = s"${appConfig.postcodeIOHost}/${postcode.replace(" ", "")}"
     httpClientResponse.read(
       httpClient
         .get(url"$url")

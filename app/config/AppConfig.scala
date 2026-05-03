@@ -21,6 +21,7 @@ class AppConfig @Inject() (configuration: Configuration) {
   val clientSecret: String = configuration.get[String]("microservice.services.fuel-finder.client-secret")
 
   val fuelApiHost: String = baseUrl("fuel-finder")
+  val postcodeIOHost: String = baseUrl("postcodes-io")
 
   val jobPartialIsEnabled: Boolean = configuration.get[Boolean]("scheduler.partial-update.isEnabled")
   val jobPartialUpdateInterval: Int = configuration.get[Int]("scheduler.partial-update.jobIntervalInMinutes")
