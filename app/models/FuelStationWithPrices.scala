@@ -13,7 +13,8 @@ final case class FuelStationWithPrices(
                               isSupermarketServiceStation: Option[Boolean],
                               location: FuelStationLocation,
                               fuelTypes: List[String],
-                              fuelPrices: Seq[FuelPrice]
+                              fuelPrices: Seq[FuelPrice],
+                              distance: Double
                             ) {
   def distanceFromCentre(centre: (Double, Double)): Double = {
     Geodesic.WGS84.Inverse(centre._1, centre._2, location.latitude, location.longitude).s12
@@ -21,7 +22,7 @@ final case class FuelStationWithPrices(
 }
 
 object FuelStationWithPrices {
-  def apply(station: FuelStation, prices: Seq[FuelPrice]): FuelStationWithPrices = {
+  def apply(station: FuelStation, prices: Seq[FuelPrice], distance: Double): FuelStationWithPrices = {
     new FuelStationWithPrices(
       station.nodeId,
       station.tradingName,
@@ -33,7 +34,8 @@ object FuelStationWithPrices {
       station.isSupermarketServiceStation,
       station.location,
       station.fuelTypes,
-      prices
+      prices,
+      distance
     )
   }
 }

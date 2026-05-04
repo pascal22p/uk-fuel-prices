@@ -18,6 +18,7 @@ GET     /search/radius                            controllers.SearchByPostcodeCo
 POST    /search/radius                            controllers.SearchByPostcodeController.showRadiusOnSubmit()
 GET     /search/check-your-answers                controllers.SearchByPostcodeController.checkYourAnswers()
 POST    /search/check-your-answers                controllers.SearchByPostcodeController.submitCheckYourAnswers()
+GET     /search/postcode/:postcode/fuel-type/:fuelType/radius/:radius  controllers.SearchByPostcodeController.showNearbyFuelStations(postcode: String, fuelType: models.FuelType, radius: Double)
 
 GET     /login                                    controllers.SessionController.loginOnLoad(redirectUrl: String)
 POST    /login                                    controllers.SessionController.loginOnSubmit()

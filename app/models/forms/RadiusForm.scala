@@ -14,6 +14,7 @@ object RadiusForm {
   val radiusForm: Form[RadiusForm] = Form(
     mapping(
       "radius"  -> of(using doubleFormat)
+        .verifying("error.radius.too.wide", p => p <= 100.0)
     )(RadiusForm.apply)(RadiusForm.unapply)
   )
 }

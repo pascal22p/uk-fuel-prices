@@ -1,3 +1,18 @@
 # https://www.playframework.com/documentation/latest/ScalaI18N
 
 h1.title=Fuel prices
+
+input.postcode.title=Search fuel stations around a postcode
+input.postcode=Enter a postcode
+
+input.fuel.type.title=Search fuel stations around a postcode
+input.fuel.type=Select a fuel type
+site.select.option=
+
+input.radius.title=Search fuel stations around a postcode
+input.radius=Enter a radius in miles
+error.radius.too.wide=Radius must be between 1 and 100 miles
+
+SearByPostcode.ChoosePostcodeQuestion.postcode=Postcode
+SearByPostcode.ChooseFuelTypeQuestion.fuelType=Fuel type
+SearByPostcode.ChooseRadiusQuestion.radiusInMiles=Radius in miles

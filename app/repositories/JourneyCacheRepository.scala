@@ -69,13 +69,19 @@ class MariadbJourneyCacheRepository @Inject() (journeyCacheQueries: JourneyCache
 
   override def get(implicit ec: ExecutionContext, request: AuthenticatedRequest[?]): Future[Option[UserAnswers]] =
     journeyCacheQueries.getUserAnswers(sessionId).flatMap {
-      case None                                                                                         => Future.successful(None)
+      case None                                                                                         =>
+        logger.debug(s"No journey cache found for session $sessionId")
+        Future.successful(None)
       case Some((_, _, lastUpdated)) if lastUpdated.isBefore(Instant.now.minus(Duration.ofMinutes(30))) =>
+        logger.debug(s"Session data too old for session $sessionId")
         Future.successful(None)
       case Some((_, data, _)) =>
+        logger.debug(s"Found journey cache for session $sessionId")
         journeyCacheQueries.updateLastUpdated(sessionId).flatMap { _ =>
           Try(Json.parse(data).as[Map[UserAnswersKey[?], UserAnswersItem]](using userAnswersMapFormat)) match {
-            case Success(obj) => Future.successful(Some(UserAnswers(obj)))
+            case Success(obj) =>
+              logger.debug(s"Successfully parsed journey cache for session $sessionId")
+              Future.successful(Some(UserAnswers(obj)))
             case Failure(ex)  =>
               journeyCacheQueries.deleteUserAnswers(sessionId).map { _ =>
                 throw ex

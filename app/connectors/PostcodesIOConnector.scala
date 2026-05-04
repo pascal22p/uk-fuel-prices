@@ -20,7 +20,7 @@ class PostcodesIOConnector @Inject()(
                                     (implicit ec: ExecutionContext) extends LoggingWithRequest {
 
   def getCoordinates(postcode: String)(implicit hc: HeaderCarrier): EitherT[Future, UpstreamErrorResponse, (Double, Double)] = {
-    val url = s"${appConfig.postcodeIOHost}/${postcode.replace(" ", "")}"
+    val url = s"${appConfig.postcodeIOHost}/postcodes/${postcode.replace(" ", "")}"
     httpClientResponse.read(
       httpClient
         .get(url"$url")

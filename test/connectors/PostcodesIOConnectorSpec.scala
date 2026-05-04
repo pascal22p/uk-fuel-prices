@@ -41,7 +41,7 @@ class PostcodesIOConnectorSpec extends BaseSpec with WireMockHelper {
 
       server.stubFor(
         WireMock
-          .get(urlEqualTo("/AA"))
+          .get(urlEqualTo("/postcodes/AA"))
           .willReturn(ok(postcodeResponse))
       )
 
@@ -56,7 +56,7 @@ class PostcodesIOConnectorSpec extends BaseSpec with WireMockHelper {
 
       server.stubFor(
         WireMock
-          .get(urlEqualTo("/AA"))
+          .get(urlEqualTo("/postcodes/AA"))
           .willReturn(notFound())
       )
 
@@ -71,7 +71,7 @@ class PostcodesIOConnectorSpec extends BaseSpec with WireMockHelper {
 
       server.stubFor(
         WireMock
-          .get(urlEqualTo("/AA"))
+          .get(urlEqualTo("/postcodes/AA"))
           .willReturn(ok("{}"))
       )
 

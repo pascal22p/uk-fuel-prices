@@ -1,25 +1,20 @@
 package controllers
 
 import actions.AuthAction
-import cats.data.OptionT
 import cats.implicits.*
-import connectors.PostcodesIOConnector
 import models.forms.{FuelTypeForm, PostcodeForm, RadiusForm}
 import models.journeyCache.UserAnswersKey.{ChooseFuelTypeQuestion, ChoosePostcodeQuestion, ChooseRadiusQuestion}
 import play.api.i18n.I18nSupport
-import play.api.mvc.*
+import play.api.mvc.{Action, AnyContent, BaseController, ControllerComponents, Result}
 import repositories.MariadbJourneyCacheRepository
-import views.html.search.{CheckYourAnswersView, InputFuelTypeView, InputPostcodeView, InputRadiusView}
+import views.html.search.{CheckYourAnswersView, InputFuelTypeView, InputPostcodeView, InputRadiusView, SearchStationsView}
 import models.forms.extensions.FillFormExtension.filledWith
 import models.journeyCache.JourneyId.SearByPostcode
-import models.FuelPriceForStation
+import models.FuelType
 import play.api.data.Form
-import queries.GetSqlQueries
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
-import utils.GeoBoundingBox
-import net.sf.geographiclib.Geodesic
-import views.html.TableView
+import services.SearchByPostcodeService
 
 import javax.inject.*
 import scala.concurrent.{ExecutionContext, Future}
@@ -28,14 +23,13 @@ import scala.concurrent.{ExecutionContext, Future}
 class SearchByPostcodeController @Inject()(
                                 val controllerComponents: ControllerComponents,
                                 authAction: AuthAction,
+                                searchByPostcodeService: SearchByPostcodeService,
                                 journeyCacheRepository: MariadbJourneyCacheRepository,
-                                postcodesIOConnector: PostcodesIOConnector,
-                                getSqlQueries: GetSqlQueries,
                                 inputPostcodeView: InputPostcodeView,
                                 inputFuelTypeView: InputFuelTypeView,
                                 inputRadiusView: InputRadiusView,
                                 checkYourAnswersView: CheckYourAnswersView,
-                                tableView: TableView
+                                searchStationsView: SearchStationsView
                               )(implicit ec: ExecutionContext) extends BaseController with I18nSupport {
 
   def showPostcodeForm: Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
@@ -128,33 +122,35 @@ class SearchByPostcodeController @Inject()(
   }
 
   def submitCheckYourAnswers: Action[AnyContent] = authAction.async { implicit request =>
-    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
-    journeyCacheRepository.get.flatMap {
-      case None => Future.successful(Redirect(controllers.routes.SearchByPostcodeController.showPostcodeForm()))
+    journeyCacheRepository.get.map {
+      case None => Redirect(controllers.routes.SearchByPostcodeController.showPostcodeForm())
       case Some(cache) =>
-        (for {
-          postcode <- OptionT.fromOption[Future](cache.getOptionalItem(ChoosePostcodeQuestion))
-          fuelType <- OptionT.fromOption[Future](cache.getOptionalItem(ChooseFuelTypeQuestion))
-          radius <- OptionT.fromOption[Future](cache.getOptionalItem(ChooseRadiusQuestion))
-          coordinates <- postcodesIOConnector.getCoordinates(postcode.postcode).toOption
-          boundingBox <- OptionT.some[Future](GeoBoundingBox.fromRadius(coordinates._1, coordinates._2, radius.radiusInMiles * 1.60934))
-          fuelStationsCandidates <- OptionT.liftF(getSqlQueries.getFuelStations(boundingBox))
-          fuelStations = fuelStationsCandidates.filter { station =>
-            Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, station.location.latitude, station.location.longitude).s12 <= radius.radiusInMiles * 1.60934 * 1000.0
-          }
-          fuelPrices <- OptionT.liftF(fuelStations.traverse(station => getSqlQueries.findPricesForStation(station.nodeId).map(station -> _)).map(_.toMap))
+        val result = for {
+          postcode <- cache.getOptionalItem(ChoosePostcodeQuestion)
+          fuelType <- cache.getOptionalItem(ChooseFuelTypeQuestion)
+          radius <- cache.getOptionalItem(ChooseRadiusQuestion)
         } yield {
-          val fuelPriceForStations = fuelPrices.map { case (station, prices) =>
-              FuelPriceForStation(station.nodeId, None, station.tradingName, prices.filter(price => s"${price.fuelType}" == s"${fuelType.fuelType}").sortBy(_.priceLastUpdated.toEpochMilli).takeRight(1))
-          }
-            .toSeq
-            .filter(_.fuelPrices.nonEmpty)
-            .sortBy(_.fuelPrices.take(1).headOption.map(_.price).getOrElse(0.0))
-          Ok(tableView(fuelPriceForStations, postcode.postcode))
-        }).getOrElse {
-          InternalServerError("Something gone wrong")
+          Redirect(controllers.routes.SearchByPostcodeController.showNearbyFuelStations(
+            postcode.postcode,
+            fuelType.fuelType,
+            radius.radiusInMiles
+          ))
         }
+        result.getOrElse(InternalServerError("A cache entry is missing"))
     }
   }
+
+  def showNearbyFuelStations(postcode: String, fuelType: FuelType, radius: Double): Action[AnyContent] = authAction.async { implicit request =>
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+    searchByPostcodeService.getViewModel(postcode, fuelType, radius.min(100.0)).fold(
+      error => error match {
+        case error: UpstreamErrorResponse if error.statusCode == NOT_FOUND => NotFound("Postcode cannot be found")
+        case error => InternalServerError(s"Something gone wrong. $error")
+      },
+      viewModel => Ok(searchStationsView(viewModel))
+    )
+  }
+
+
 }
 
