@@ -63,7 +63,7 @@ class AdminController @Inject()(
         """SELECT lastUpdate
           |FROM fuel_locks
           |WHERE id = {lockId}
-          |FOR UPDATE""".stripMargin)
+          |FOR UPDATE NOWAIT""".stripMargin)
         .on("lockId" -> lockId)
         .as(scalar[LocalDateTime].singleOpt)
 

@@ -28,6 +28,7 @@ trait MariadbHelper extends BaseSpec with BeforeAndAfterEach with LoggingWithReq
     db.withConnection { implicit conn =>
       queries.trim
         .split(";")
+        .filterNot(_.trim.isEmpty)
         .map { query =>
           if (logMe) logger.error("Query: " + query)
           Try(SQL(query).execute()) match {

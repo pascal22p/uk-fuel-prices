@@ -7,7 +7,7 @@ import play.api.*
 import play.api.i18n.I18nSupport
 import play.api.mvc.*
 import queries.GetSqlQueries
-import views.html.{IndexView, StationView}
+import views.html.StationView
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -16,12 +16,11 @@ class HomeController @Inject()(
                                 val controllerComponents: ControllerComponents,
                                 getSqlQueries: GetSqlQueries,
                                 authAction: AuthAction,
-                                indexView: IndexView,
                                 stationView: StationView
                               )(implicit ec: ExecutionContext) extends BaseController with I18nSupport{
 
   def index(): Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
-    Future.successful(Ok(indexView()))
+    Future.successful(Redirect(routes.SearchByPostcodeController.showPostcodeForm()))
   }
 
   def fuelStationDetails(nodeId: String): Action[AnyContent] = authAction.async { implicit authenticatedRequest =>

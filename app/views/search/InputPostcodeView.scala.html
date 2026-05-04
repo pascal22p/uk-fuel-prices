@@ -1,0 +1,43 @@
+@import views.html.helper
+@import views.html.components.Block
+@import models.forms.PostcodeForm
+@import uk.gov.hmrc.govukfrontend.views.Implicits.*
+
+@this(
+        main: Main,
+        block: Block,
+        formWithCSRF: FormWithCSRF,
+        govukInput: GovukInput,
+        govukButton: GovukButton
+)
+
+@(userForm: Form[PostcodeForm])(implicit request: AuthenticatedRequest[?], messages: Messages)
+
+@main(None) {
+
+    @block(messages("input.postcode.title")) {
+
+        @if(userForm.hasGlobalErrors) {
+            @for(error <- userForm.globalErrors) {
+                <span class="error-message">@error.format(messages)</span>
+            }
+        }
+
+        @formWithCSRF(controllers.routes.SearchByPostcodeController.showPostcodeOnSubmit()) {
+            @govukInput(
+                Input(
+                    autocomplete = Some("data-default-value"),
+                    label = Label(content = Text(messages("input.postcode"))),
+                    classes = "govuk-!-width-one-half"
+                ).withFormField(userForm("postcode"))
+            )
+
+            @govukButton(
+                Button(
+                    content = Text("Submit")
+                )
+            )
+
+        }
+    }
+}
