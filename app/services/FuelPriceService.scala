@@ -2,6 +2,7 @@ package services
 
 import cats.data.EitherT
 import cats.implicits.*
+import cats.syntax.all.*
 import connectors.FuelPriceConnector
 import models.FuelPriceForStation
 import play.api.Logging
@@ -67,7 +68,8 @@ class FuelPriceService @Inject()(
         for {
           absentNodeIds <- EitherT.liftF[Future, UpstreamErrorResponse, Seq[String]](getSqlQueries.findAbsentFuelStations(nodeIds))
           validSanitisedFuels = sanitisedFuels.filterNot(fuel => absentNodeIds.contains(fuel.nodeId))
-          _ <- EitherT.liftF[Future, UpstreamErrorResponse, Int](insertSqlQueries.insertFuelPrices(validSanitisedFuels))
+          nonEmptyValidSanitisedFuels <- EitherT.cond[Future](validSanitisedFuels.nonEmpty, validSanitisedFuels, UpstreamErrorResponse("Empty fuel price list", NOT_FOUND))
+          _ <- EitherT.liftF[Future, UpstreamErrorResponse, Int](insertSqlQueries.insertFuelPrices(nonEmptyValidSanitisedFuels))
           _ <- uploadAllFuelPrices(batchNumber + 1, effectiveStartDate)
         } yield {
           if(absentNodeIds.nonEmpty) logger.error(s"Absent fuel stations: $absentNodeIds")
