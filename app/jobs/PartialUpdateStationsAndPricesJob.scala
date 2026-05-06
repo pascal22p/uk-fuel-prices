@@ -60,7 +60,7 @@ class PartialUpdateStationsAndPricesJob(
 
             Await.result(execute.fold(
               error => {
-                logger.error(error)
+                logger.warn(error)
                 conn.rollback()
               },
               _ => {
