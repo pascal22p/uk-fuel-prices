@@ -1,14 +1,16 @@
 package controllers.admin
 
 import actions.AuthJourney
+import cats.data.EitherT
 import anorm.SQL
 import anorm.SqlParser.scalar
 import play.api.Logging
 import play.api.db.Database
 import play.api.i18n.I18nSupport
 import play.api.mvc.*
-import services.FuelPriceService
-import uk.gov.hmrc.http.HeaderCarrier
+import queries.InsertSqlQueries
+import services.{FuelPriceService, FuelStationsService}
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import views.html.admin.{IndexView, UpdateCompletedView}
 
@@ -21,6 +23,8 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 class AdminController @Inject()(
     authJourney: AuthJourney,
     fuelPriceService: FuelPriceService,
+    fuelStationsService: FuelStationsService,
+    insertSqlQueries: InsertSqlQueries,
     db: Database,
     updateCompletedView: UpdateCompletedView,
     indexView: IndexView,
@@ -47,6 +51,22 @@ class AdminController @Inject()(
     fuelPriceService.uploadAllFuelStations().fold(
       error => InternalServerError(error.message),
       _ => Ok(updateCompletedView())
+    )
+  }
+
+  def updateFuelStation(nodeId: String): Action[AnyContent] = authJourney.authWithAdminRight.async { implicit authenticatedRequest =>
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(authenticatedRequest, authenticatedRequest.session)
+
+    fuelStationsService.findFuelStations(nodeId).flatMap {
+      case Some(station) =>
+        EitherT.liftF[Future, UpstreamErrorResponse, Int](insertSqlQueries.insertStations(Seq(station))).map { _ =>
+          Ok(updateCompletedView())
+        }
+      case None =>
+        EitherT.rightT(NotFound(s"No station found with nodeId $nodeId"))
+    }.fold(
+      error => InternalServerError(error.message),
+      identity
     )
   }
 

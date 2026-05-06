@@ -2,4 +2,5 @@
 GET     /                                   controllers.admin.AdminController.index
 GET     /update-fuel-prices                 controllers.admin.AdminController.updateFuelPrices()
 GET     /update-fuel-stations               controllers.admin.AdminController.updateFuelStations()
+GET     /update-fuel-station/$nodeId<[A-Fa-f0-9]{64}>        controllers.admin.AdminController.updateFuelStation(nodeId: String)
 GET     /partial-update                     controllers.admin.AdminController.partialUpdate()
