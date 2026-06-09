@@ -1,13 +1,47 @@
 @import uk.gov.hmrc.govukfrontend.views.Implicits.*
+@import java.time.LocalDateTime
+@import models.forms.NodeIdForm
 
-@this(main: Main)
+@this(  main: Main,
+        formWithCSRF: FormWithCSRF,
+        govukInput: GovukInput,
+        govukButton: GovukButton
+)
 
-@()(implicit request: AuthenticatedRequest[?], messages: Messages)
+@(nodeIdForm: Form[NodeIdForm], lastUpdate: Option[LocalDateTime])(implicit request: AuthenticatedRequest[?], messages: Messages)
 
-@main(None) {
+@main(caption = Some(s"Last Update: ${lastUpdate.fold("Never")(_.format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy HH:mm:ss")))}")) {
+  <h2 class="govuk-heading-m">Fuel data management</h2>
+
   <ul class="govuk-list">
-    <li><a href="@controllers.admin.routes.AdminController.updateFuelPrices()">Update fuel prices</a></li>
-    <li><a href="@controllers.admin.routes.AdminController.updateFuelStations()">Update fuel stations</a></li>
-    <li><a href="@controllers.admin.routes.AdminController.partialUpdate()">Partial update</a></li>
+    <li><a href="@controllers.admin.routes.AdminController.updateFuelPrices()">Update all fuel prices</a></li>
+    <li><a href="@controllers.admin.routes.AdminController.updateFuelStations()">Update all fuel stations</a></li>
+    <li><a href="@controllers.admin.routes.AdminController.partialUpdate()">Partial update of fuel stations and fuel prices</a></li>
   </ul>
+
+  <hr class="govuk-section-break govuk-section-break--m govuk-section-break--visible">
+
+  <h2 class="govuk-heading-m">Update station by Node ID</h2>
+
+  @formWithCSRF(action = controllers.admin.routes.AdminController.updatePostFuelStation(), Symbol("method") -> "GET") {
+
+    @govukInput(Input(
+      id = "nodeId",
+      name = "nodeId",
+      classes = "govuk-input--width-30",
+      label = Label(
+        content = Text("Node ID"),
+        classes = "govuk-label--s"
+      ),
+      hint = Some(Hint(
+        content = Text("Enter the 64 character hexadecimal node ID")
+      )),
+      errorMessage = nodeIdForm("nodeId").error.map(e => ErrorMessage(content = Text(e.message))),
+      value = nodeIdForm("nodeId").value
+    ))
+
+    @govukButton(Button(
+      content = Text("Update station")
+    ))
+  }
 }

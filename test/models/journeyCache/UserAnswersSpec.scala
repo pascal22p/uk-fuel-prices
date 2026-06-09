@@ -17,7 +17,7 @@ class UserAnswersSpec extends BaseSpec {
   implicit val request: AuthenticatedRequest[AnyContentAsEmpty.type] =
     AuthenticatedRequest(
       FakeRequest(),
-      Session("", SessionData(Some(UserData(0, "", "", true))), LocalDateTime.now())
+      Session("", SessionData(Some(UserData(0, "", "", "favouriteNodeId", true))), LocalDateTime.now())
     )
 
   val requiredKey: UserAnswersKey[PostcodeForm] = ChoosePostcodeQuestion
