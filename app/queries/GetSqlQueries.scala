@@ -1,11 +1,13 @@
 package queries
 
 import anorm.*
+import anorm.SqlParser.scalar
 import cats.data.OptionT
 import models.*
 import play.api.db.Database
 import utils.BoundingBox
 
+import java.time.LocalDateTime
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
 
@@ -88,6 +90,19 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
         .as(SqlParser.scalar[String].*)
     }
     nodeIds.filterNot(result.contains)
+  }(using databaseExecutionContext)
+
+  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
+  def getLastUpdate: Future[Option[LocalDateTime]] = Future {
+    db.withConnection { implicit conn =>
+      SQL(
+        """SELECT lastUpdate
+          |FROM fuel_locks
+          |WHERE id = {lockId}
+          |FOR UPDATE NOWAIT""".stripMargin)
+        .on("lockId" -> LockId.stationsAndPricesLock.toString)
+        .as(scalar[LocalDateTime].singleOpt)
+    }
   }(using databaseExecutionContext)
 
 }

@@ -19,11 +19,11 @@ CREATE TABLE `fuel_admins` (
                                `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
                                `email` varchar(25) NOT NULL,
                                `password` varchar(256) NOT NULL,
+                               `favourite_node_id` varchar(64) NOT NULL,
                                `is_admin` tinyint(1) NOT NULL,
                                PRIMARY KEY (`id`),
                                UNIQUE KEY `email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
-
 
 DROP TABLE IF EXISTS `fuel_locks`;
 CREATE TABLE `fuel_locks` (

@@ -8,12 +8,12 @@ import config.AppConfig
 import scala.concurrent.duration.DurationInt
 import org.apache.pekko.actor.Actor
 import play.api.db.Database
+import anorm.*
+import anorm.SqlParser.*
+import models.LockId
 
-import anorm._
-import anorm.SqlParser._
 import java.time.LocalDateTime
 import java.time.ZoneOffset
-
 import scala.concurrent.{Await, ExecutionContext}
 
 class PartialUpdateStationsAndPricesJob(
@@ -23,8 +23,6 @@ class PartialUpdateStationsAndPricesJob(
 )(implicit ec: ExecutionContext)
     extends Actor
     with Logging {
-
-  private val lockId = "stationsAndPricesLock"
 
   def receive: Receive = {
     case RunJob => {
@@ -40,12 +38,12 @@ class PartialUpdateStationsAndPricesJob(
             |FROM fuel_locks
             |WHERE id = {lockId}
             |FOR UPDATE NOWAIT""".stripMargin)
-          .on("lockId" -> lockId)
+          .on("lockId" -> s"${LockId.stationsAndPricesLock}")
           .as(scalar[LocalDateTime].singleOpt)
 
         lastUpdate match {
           case None =>
-            logger.error(s"No lock row found for $lockId, skipping job. Run initial import via admin")
+            logger.error(s"No lock row found for ${LockId.stationsAndPricesLock}, skipping job. Run initial import via admin")
             conn.rollback()
 
           case Some(lastUpdate) if lastUpdate.isAfter(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(appConfig.jobPartialUpdateInterval * 60)) =>
@@ -68,7 +66,7 @@ class PartialUpdateStationsAndPricesJob(
                   """UPDATE fuel_locks
                     |SET lastUpdate = {now}
                     |WHERE id = {lockId}""".stripMargin)
-                  .on("lockId" -> lockId, "now" -> now)
+                  .on("lockId" -> s"${LockId.stationsAndPricesLock}", "now" -> now)
                   .executeUpdate()
                 logger.info(s"Schedule job finished")
               }
