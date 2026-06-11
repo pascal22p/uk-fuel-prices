@@ -71,7 +71,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
         """SELECT fp.*, ft.name AS fuelType
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
-          |WHERE fp.nodeId_bin in ({nodeIds})""".stripMargin
+          |WHERE fp.nodeId_bin = UNHEX({nodeId})""".stripMargin
       )
         .on("nodeId" -> nodeId)
         .as(FuelPrice.fuelPriceParser.*)
