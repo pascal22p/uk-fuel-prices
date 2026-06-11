@@ -95,9 +95,7 @@ lazy val ukFuelPrice = (project in file("."))
   .enablePlugins(PlayScala)
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(SbtWeb)
-  .enablePlugins(JavaAgent)
   .settings(
-    javaAgents += "io.pyroscope" % "agent" % "2.5.4",
     PlayKeys.playDefaultPort := 9234,
     libraryDependencies ++= LibDependencies.all,
     dependencyOverrides ++= Seq(
