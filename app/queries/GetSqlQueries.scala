@@ -86,7 +86,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
         """SELECT fp.*, ft.name AS fuelType, HEX(nodeId_bin) as nodeId
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
-          |WHERE fp.nodeId_bin = UNHEX({nodeId})""".stripMargin
+          |WHERE fp.nodeId_bin IN ({nodeIds})""".stripMargin
       )
         .on("nodeIds" -> binaryIds)
         .as(FuelPrice.fuelPriceWithNodeIdParser.*)
