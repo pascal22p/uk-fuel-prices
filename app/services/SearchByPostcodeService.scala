@@ -11,6 +11,7 @@ import utils.GeoBoundingBox
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+import io.opentelemetry.instrumentation.annotations.WithSpan
 
 @Singleton
 class SearchByPostcodeService @Inject()(
@@ -19,6 +20,9 @@ class SearchByPostcodeService @Inject()(
                                        )(
     implicit ec: ExecutionContext
 ) {
+
+  @SuppressWarnings(Array("org.wartremover.warts.OptionPartial"))
+  @WithSpan
   def getViewModel(postcode: String, fuelType: FuelType, radius: Double)(implicit hc: HeaderCarrier): EitherT[Future, Throwable, SearchByPostcodeViewModel] = {
     for {
       coordinates <- postcodesIOConnector.getCoordinates(postcode).leftMap(identity[Throwable])
@@ -27,15 +31,20 @@ class SearchByPostcodeService @Inject()(
       fuelStations = fuelStationsCandidates.filter { station =>
         Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, station.location.latitude, station.location.longitude).s12 <= radius * 1.60934 * 1000.0
       }
-      fuelStationWithPrices <- EitherT.liftF(fuelStations.traverse { station =>
-        getSqlQueries.findPricesForStation(station.nodeId).map { fuelPrices =>
-          val latestSelectFuel = fuelPrices.filter(ft => ft.fuelType == fuelType).maxByOption(_.priceChangeEffectiveTimestamp).toList
-          FuelStationWithPrices(
-            station, 
-            latestSelectFuel,
-            Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, station.location.latitude, station.location.longitude).s12)
-        }
-      })
+      fuelStationWithPrices <-
+        EitherT.liftF(
+          getSqlQueries.findPricesForStations(fuelStations.map(_.nodeId)).map { fuelStationsWithPrices =>
+            val stationIndex = fuelStations.map(s => s.nodeId -> s).toMap
+
+            fuelStationsWithPrices.map { (nodeId, fuelPrices) =>
+              val station     = stationIndex(nodeId)
+              val latestPrice = fuelPrices.filter(_.fuelType == fuelType).maxByOption(_.priceChangeEffectiveTimestamp).toList
+              val distance    = Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, station.location.latitude, station.location.longitude).s12
+
+              FuelStationWithPrices(station, latestPrice, distance)
+            }.toList
+          }
+        )
     } yield {
       SearchByPostcodeViewModel(
         fuelStationWithPrices.sortBy(_.fuelPrices.headOption.map(_.price)),

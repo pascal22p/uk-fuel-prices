@@ -13,7 +13,8 @@ object LibDependencies {
     "net.logstash.logback"     % "logstash-logback-encoder" % "9.0",
     "uk.gov.hmrc"              %% "http-verbs-play-30"      % "15.8.0",
     "org.apache.pekko"         %% "pekko-actor"             % play.core.PlayVersion.pekkoVersion,
-    "net.sf.geographiclib"     % "GeographicLib-Java"       % "2.1"
+    "net.sf.geographiclib"     % "GeographicLib-Java"       % "2.1",
+    "io.opentelemetry.instrumentation" % "opentelemetry-instrumentation-annotations" % "2.28.1"
   )
 
   val libraryDependenciesTest: Seq[ModuleID] = Seq(
