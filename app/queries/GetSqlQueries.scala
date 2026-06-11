@@ -78,6 +78,23 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
+  def findPricesForStations(nodeIds: Seq[String]): Future[Map[String, Seq[FuelPrice]]] = Future {
+    val binaryIds = nodeIds.map(java.util.HexFormat.of().parseHex)
+
+    val results = db.withConnection { implicit conn =>
+      SQL(
+        """SELECT fp.*, ft.name AS fuelType, HEX(nodeId_bin) as nodeId
+          |FROM fuel_prices fp
+          |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
+          |WHERE fp.nodeId_bin IN ({nodeIds})""".stripMargin
+      )
+        .on("nodeIds" -> binaryIds)
+        .as(FuelPrice.fuelPriceWithNodeIdParser.*)
+    }
+    
+    results.groupMap(_._1)(_._2)
+  }(using databaseExecutionContext)
+
   def findAbsentFuelStations(nodeIds: Seq[String]): Future[Seq[String]] = Future {
     val binaryIds = nodeIds.map(java.util.HexFormat.of().parseHex)
 
