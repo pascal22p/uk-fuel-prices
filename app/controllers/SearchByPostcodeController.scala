@@ -10,7 +10,7 @@ import repositories.MariadbJourneyCacheRepository
 import views.html.search.{CheckYourAnswersView, InputFuelTypeView, InputPostcodeView, InputRadiusView, SearchStationsView}
 import models.forms.extensions.FillFormExtension.filledWith
 import models.journeyCache.JourneyId.SearByPostcode
-import models.FuelType
+import models.{FuelType, LoggingWithRequest}
 import play.api.data.Form
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
@@ -30,7 +30,7 @@ class SearchByPostcodeController @Inject()(
                                 inputRadiusView: InputRadiusView,
                                 checkYourAnswersView: CheckYourAnswersView,
                                 searchStationsView: SearchStationsView
-                              )(implicit ec: ExecutionContext) extends BaseController with I18nSupport {
+                              )(implicit ec: ExecutionContext) extends BaseController with I18nSupport with LoggingWithRequest {
 
   def showPostcodeForm: Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
     journeyCacheRepository.get(ChoosePostcodeQuestion).map { defaults =>
