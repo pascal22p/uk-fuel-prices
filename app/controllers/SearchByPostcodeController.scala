@@ -142,6 +142,8 @@ class SearchByPostcodeController @Inject()(
 
   def showNearbyFuelStations(postcode: String, fuelType: FuelType, radius: Double): Action[AnyContent] = authAction.async { implicit request =>
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(request, request.session)
+    logger.debug("traceparent=" + request.headers.get("traceparent"))
+    
     searchByPostcodeService.getViewModel(postcode, fuelType, radius.min(100.0)).fold(
       error => error match {
         case error: UpstreamErrorResponse if error.statusCode == NOT_FOUND => NotFound("Postcode cannot be found")
