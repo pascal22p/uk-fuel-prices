@@ -99,9 +99,9 @@ lazy val ukFuelPrice = (project in file("."))
     PlayKeys.playDefaultPort := 9234,
     libraryDependencies ++= LibDependencies.all,
     dependencyOverrides ++= Seq(
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.22.0",
-      "com.fasterxml.jackson.core"    % "jackson-databind"     % "2.22.0",
-      "com.fasterxml.jackson.core"    % "jackson-core"         % "2.22.0",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.22.1",
+      "com.fasterxml.jackson.core"    % "jackson-databind"     % "2.22.1",
+      "com.fasterxml.jackson.core"    % "jackson-core"         % "2.22.1",
       "com.fasterxml.jackson.core"    % "jackson-annotations"  % "2.22"
     ),
     scoverageSettings,
