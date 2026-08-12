@@ -1,6 +1,7 @@
 package controllers
 
 import actions.AuthAction
+import config.AppConfig
 
 import javax.inject.*
 import play.api.*
@@ -16,6 +17,7 @@ class HomeController @Inject()(
                                 val controllerComponents: ControllerComponents,
                                 getSqlQueries: GetSqlQueries,
                                 authAction: AuthAction,
+                                appConfig: AppConfig,
                                 stationView: StationView,
                                 homepageView: HomepageView
                               )(implicit ec: ExecutionContext) extends BaseController with I18nSupport{
@@ -24,7 +26,7 @@ class HomeController @Inject()(
     for {
       totalFuelStations <- getSqlQueries.getTotalFuelStations
       totalFuelPrices <- getSqlQueries.getTotalFuelPrices
-      lastUpdates <- getSqlQueries.getLatestFuelPricesWithStation(20)
+      lastUpdates <- getSqlQueries.getLatestFuelPricesWithStation(appConfig.maxCountForLastUpdatedPrices)
     } yield {
      Ok(homepageView(totalFuelStations, totalFuelPrices, lastUpdates))
     }

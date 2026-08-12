@@ -4,7 +4,8 @@
 @import java.time.ZoneId
 
 @this(
-        main: Main
+        main: Main,
+        govukTable: GovukTable
 )
 
 @(
@@ -19,9 +20,17 @@
     .withZone(ZoneId.of("Europe/London"))
 }
 
+@stationLink(station: FuelPriceForStation) = {
+    <a
+    class="govuk-link"
+    href="@controllers.routes.HomeController.fuelStationDetails(station.nodeId).url">
+    @station.tradingName
+    </a>
+}
+
 @main() {
 
-    <div class="govuk-grid-row">
+    <div>
 
         <div class="govuk-grid-column-one-half">
             <div class="govuk-panel govuk-panel--confirmation">
@@ -29,7 +38,7 @@
                 @totalFuelStations
                 </h2>
                 <div class="govuk-panel__body">
-                    Fuel stations
+                    @messages("homepage.fuelStations")
                 </div>
             </div>
         </div>
@@ -40,7 +49,7 @@
                 @totalFuelPrices
                 </h2>
                 <div class="govuk-panel__body">
-                    Fuel prices
+                    @messages("homepage.fuelPrices")
                 </div>
             </div>
         </div>
@@ -48,82 +57,88 @@
     </div>
 
     <h2 class="govuk-heading-l">
-        Recently updated prices
+        @messages("homepage.recentlyUpdatedPrices")
     </h2>
 
     @if(fuelPricesForStations.isEmpty) {
 
         <p class="govuk-body">
-            No fuel prices are currently available.
+            @messages("homepage.noFuelPrices")
         </p>
 
     } else {
 
         <div class="govuk-table-responsive">
-            <table class="govuk-table">
-                <caption class="govuk-table__caption govuk-table__caption--m">
-                    Last updated fuel prices
-                </caption>
+        @govukTable(
+            Table(
+                caption = Some(messages("homepage.lastUpdatedPrices")),
+                captionClasses = "govuk-table__caption--m",
 
-                <thead class="govuk-table__head">
-                    <tr class="govuk-table__row">
-                        <th scope="col" class="govuk-table__header">
-                            Station
-                        </th>
-                        <th scope="col" class="govuk-table__header">
-                            Fuel
-                        </th>
-                        <th scope="col" class="govuk-table__header govuk-table__header--numeric">
-                            Price
-                        </th>
-                        <th scope="col" class="govuk-table__header">
-                            Updated
-                        </th>
-                    </tr>
-                </thead>
+                head = Some(
+                    Seq(
+                        HeadCell(
+                            content = Text(messages("homepage.station"))
+                        ),
+                        HeadCell(
+                            content = Text(messages("homepage.fuel"))
+                        ),
+                        HeadCell(
+                            content = Text(messages("homepage.price")),
+                            classes = "govuk-table__header--numeric"
+                        ),
+                        HeadCell(
+                            content = Text(messages("homepage.updated"))
+                        )
+                    )
+                ),
 
-                <tbody class="govuk-table__body">
+                rows = fuelPricesForStations.flatMap { station =>
+                    station.fuelPrices.zipWithIndex.map {
+                        case (price, index) =>
 
-                @for(station <- fuelPricesForStations) {
+                            val stationCell =
+                                if (index == 0) {
+                                    Seq(
+                                        TableRow(
+                                            content = HtmlContent(
+                                                stationLink(station)
+                                            ),
+                                            rowspan = Some(
+                                                station.fuelPrices.size
+                                            ),
+                                            attributes = Map(
+                                                "scope" -> "rowgroup"
+                                            )
+                                        )
+                                    )
+                                } else {
+                                    Seq.empty[TableRow]
+                                }
 
-                    @for((price, index) <- station.fuelPrices.zipWithIndex) {
-
-                        <tr class="govuk-table__row">
-
-                            @if(index == 0) {
-                                <th
-                                scope="rowgroup"
-                                class="govuk-table__header"
-                                rowspan="@station.fuelPrices.size">
-
-                                    <a
-                                    class="govuk-link"
-                                    href="@controllers.routes.HomeController.fuelStationDetails(station.nodeId).url">
-                                    @station.tradingName
-                                    </a>
-
-                                </th>
-                            }
-
-                        <td class="govuk-table__cell">
-                        @price.fuelType
-                        </td>
-
-                        <td class="govuk-table__cell govuk-table__cell--numeric">
-                        @price.price
-                        </td>
-
-                        <td class="govuk-table__cell">
-                        @dateFormatter.format(price.priceLastUpdated)
-                        </td>
-
-                        </tr>
+                            stationCell ++ Seq(
+                                TableRow(
+                                    content = Text(
+                                        price.fuelType.toString
+                                    )
+                                ),
+                                TableRow(
+                                    content = Text(
+                                        price.price.toString
+                                    ),
+                                    classes = "govuk-table__cell--numeric"
+                                ),
+                                TableRow(
+                                    content = Text(
+                                        dateFormatter.format(
+                                            price.priceLastUpdated
+                                        )
+                                    )
+                                )
+                            )
                     }
-
                 }
-
-                </tbody>
-            </table>
+            )
+        )
         </div>
     }
 }

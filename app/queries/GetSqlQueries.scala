@@ -63,8 +63,9 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |) latest
            |WHERE rowNumber = 1
            |ORDER BY priceLastUpdated DESC
-           |LIMIT $numberOfResult""".stripMargin
+           |LIMIT {limit}""".stripMargin
       )
+        .on("limit" -> numberOfResult)
         .as(FuelPrice.fuelPriceWithStationInfoParser.*)
     }
 
