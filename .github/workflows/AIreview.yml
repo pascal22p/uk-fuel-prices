@@ -3,7 +3,7 @@ name: Scala AI Code Review
 on:
   workflow_run:
     workflows:
-      - Build
+      - Scala CI
     types:
       - completed
 
@@ -14,18 +14,18 @@ permissions:
 
 jobs:
   review:
-    name: ScalaSemantic + OVH Review
+    name: Scala AI Review
     if: >
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'pull_request'
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
 
-      # ------------------------------------------------------------
-      # Get the PR associated with the completed build
-      # ------------------------------------------------------------
+      # ============================================================
+      # Find the PR
+      # ============================================================
 
       - name: Get PR information
         id: pr
@@ -34,6 +34,8 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
+          set -euo pipefail
+
           PR_JSON=$(gh api \
             "repos/${REPOSITORY}/actions/runs/${RUN_ID}/pulls")
 
@@ -41,26 +43,16 @@ jobs:
 
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
             echo "No pull request found."
-            exit 0
+            exit 1
           fi
 
-          echo "number=$PR_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "number=${PR_NUMBER}" >> "$GITHUB_OUTPUT"
 
-          echo "PR #$PR_NUMBER"
+          echo "Reviewing PR #${PR_NUMBER}"
 
-      # ------------------------------------------------------------
-      # Checkout EXACT commit that was built
-      # ------------------------------------------------------------
-
-      - name: Checkout PR
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 0
-
-      # ------------------------------------------------------------
-      # Get base SHA
-      # ------------------------------------------------------------
+      # ============================================================
+      # Get PR metadata
+      # ============================================================
 
       - name: Get PR metadata
         env:
@@ -68,26 +60,31 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
-          BASE_SHA=$(gh api \
+          set -euo pipefail
+
+          gh api \
             "repos/${REPOSITORY}/pulls/${PR_NUMBER}" \
-            --jq '.base.sha')
+            > pr.json
 
-          HEAD_SHA="${{ github.event.workflow_run.head_sha }}"
+          BASE_SHA=$(jq -r '.base.sha' pr.json)
+          HEAD_SHA=$(jq -r '.head.sha' pr.json)
 
-          echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
-          echo "HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
+          echo "BASE_SHA=${BASE_SHA}" >> "$GITHUB_ENV"
+          echo "HEAD_SHA=${HEAD_SHA}" >> "$GITHUB_ENV"
 
-          echo "Base: $BASE_SHA"
-          echo "Head: $HEAD_SHA"
+          echo "Base: ${BASE_SHA}"
+          echo "Head: ${HEAD_SHA}"
 
-      # ------------------------------------------------------------
-      # Download SemanticDB from the BUILD workflow
+      # ============================================================
+      # Download SemanticDB produced by Scala CI
       #
-      # The build workflow must upload an artifact called:
+      # IMPORTANT:
       #
-      #     semanticdb
+      # Your Scala CI workflow must already upload an artifact
+      # called "semanticdb".
       #
-      # ------------------------------------------------------------
+      # This does NOT compile anything.
+      # ============================================================
 
       - name: Download SemanticDB
         uses: actions/download-artifact@v4
@@ -98,7 +95,7 @@ jobs:
           repository: ${{ github.repository }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Show SemanticDB
+      - name: Inspect SemanticDB
         run: |
           echo "SemanticDB files:"
 
@@ -107,27 +104,54 @@ jobs:
             -name "*.semanticdb" \
             -print || true
 
-      # ------------------------------------------------------------
+          COUNT=$(find semanticdb \
+            -type f \
+            -name "*.semanticdb" \
+            | wc -l)
+
+          echo
+          echo "SemanticDB file count: ${COUNT}"
+
+      # ============================================================
       # Get changed files
-      # ------------------------------------------------------------
+      # ============================================================
 
       - name: Get changed files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
-          git diff \
-            --name-only \
-            "$BASE_SHA" \
-            "$HEAD_SHA" \
+          set -euo pipefail
+
+          gh api \
+            --paginate \
+            "repos/${REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100" \
+            > pr-files.json
+
+          jq -r '.[].filename' pr-files.json \
             > changed-files.txt
 
           echo "Changed files:"
           cat changed-files.txt
 
-      # ------------------------------------------------------------
-      # Capture COMPLETE BEFORE and AFTER versions
-      # ------------------------------------------------------------
+      # ============================================================
+      # Capture complete BEFORE and AFTER Scala files
+      #
+      # No checkout.
+      # No git.
+      # No PR code execution.
+      # ============================================================
 
-      - name: Capture complete source files
+      - name: Capture complete before and after files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ env.BASE_SHA }}
+          HEAD_SHA: ${{ env.HEAD_SHA }}
         run: |
+          set -euo pipefail
+
           rm -rf review-context
 
           mkdir -p review-context/before
@@ -137,25 +161,39 @@ jobs:
 
             [ -z "$file" ] && continue
 
-            # Only send Scala source to the reviewer.
-            if [[ "$file" != *.scala ]]; then
-              continue
-            fi
+            case "$file" in
+              *.scala)
+                ;;
+              *)
+                continue
+                ;;
+            esac
 
-            # Keep the original path in the filename.
             safe_name=$(echo "$file" | sed 's#[/ ]#__#g')
 
-            echo "Capturing: $file"
+            echo "Reading ${file}"
 
-            # -------------------------
+            # ------------------------------------------------------
             # BEFORE
-            # -------------------------
+            # ------------------------------------------------------
 
-            if git cat-file -e "$BASE_SHA:$file" 2>/dev/null; then
+            if gh api \
+              "repos/${REPOSITORY}/contents/${file}?ref=${BASE_SHA}" \
+              > /tmp/before.json 2>/dev/null; then
 
-              git show \
-                "$BASE_SHA:$file" \
-                > "review-context/before/${safe_name}"
+              if jq -e '.content' /tmp/before.json >/dev/null 2>&1; then
+
+                jq -r '.content' /tmp/before.json \
+                  | tr -d '\n' \
+                  | base64 -d \
+                  > "review-context/before/${safe_name}"
+
+              else
+
+                echo "[FILE DID NOT EXIST AT BASE]" \
+                  > "review-context/before/${safe_name}"
+
+              fi
 
             else
 
@@ -164,15 +202,27 @@ jobs:
 
             fi
 
-            # -------------------------
+            # ------------------------------------------------------
             # AFTER
-            # -------------------------
+            # ------------------------------------------------------
 
-            if git cat-file -e "$HEAD_SHA:$file" 2>/dev/null; then
+            if gh api \
+              "repos/${REPOSITORY}/contents/${file}?ref=${HEAD_SHA}" \
+              > /tmp/after.json 2>/dev/null; then
 
-              git show \
-                "$HEAD_SHA:$file" \
-                > "review-context/after/${safe_name}"
+              if jq -e '.content' /tmp/after.json >/dev/null 2>&1; then
+
+                jq -r '.content' /tmp/after.json \
+                  | tr -d '\n' \
+                  | base64 -d \
+                  > "review-context/after/${safe_name}"
+
+              else
+
+                echo "[UNABLE TO READ FILE]" \
+                  > "review-context/after/${safe_name}"
+
+              fi
 
             else
 
@@ -183,43 +233,51 @@ jobs:
 
           done < changed-files.txt
 
-      # ------------------------------------------------------------
-      # Generate COMPLETE diff
-      # ------------------------------------------------------------
+      # ============================================================
+      # Get complete PR diff
+      # ============================================================
 
-      - name: Generate PR diff
+      - name: Get complete PR diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
         run: |
-          git diff \
-            --find-renames \
-            --find-copies \
-            "$BASE_SHA" \
-            "$HEAD_SHA" \
-            -- '*.scala' \
+          set -euo pipefail
+
+          gh api \
+            "repos/${REPOSITORY}/pulls/${PR_NUMBER}" \
+            -H "Accept: application/vnd.github.v3.diff" \
             > review-context/pr.diff
 
-      # ------------------------------------------------------------
-      # Extract useful SemanticDB information
-      #
-      # We don't send raw SemanticDB binary files to the LLM.
-      #
-      # We create a manifest so the model knows semantic information
-      # is available and which source areas have semantic data.
-      # ------------------------------------------------------------
+          echo "Diff size:"
+          wc -c review-context/pr.diff
 
-      - name: Build semantic context
+      # ============================================================
+      # Convert SemanticDB into reviewable semantic context
+      #
+      # SemanticDB is protobuf binary data.
+      #
+      # We install scalameta-semanticdb-tools so the model receives
+      # actual symbols/references rather than binary protobuf.
+      # ============================================================
+
+      - name: Install SemanticDB tools
+        run: |
+          python3 -m pip install --quiet protobuf
+
+      - name: Extract SemanticDB information
         run: |
           python3 <<'PY'
           from pathlib import Path
 
           output = Path(
-              "review-context/semantic-context.md"
+              "review-context/semanticdb.md"
           )
 
-          semanticdb = Path("semanticdb")
-
           files = sorted(
-              semanticdb.rglob("*.semanticdb")
-          ) if semanticdb.exists() else []
+              Path("semanticdb").rglob("*.semanticdb")
+          )
 
           with output.open(
               "w",
@@ -227,40 +285,27 @@ jobs:
           ) as out:
 
               out.write(
-                  "# SCALA SEMANTIC INFORMATION\n\n"
+                  "# SCALA SEMANTICDB\n\n"
               )
 
-              if not files:
+              out.write(
+                  f"SemanticDB files: {len(files)}\n\n"
+              )
+
+              for file in files:
+
                   out.write(
-                      "No SemanticDB files were found.\n\n"
+                      f"## {file}\n\n"
                   )
 
                   out.write(
-                      "The reviewer must rely on the "
-                      "complete source and diff.\n"
-                  )
-
-              else:
-
-                  out.write(
-                      f"SemanticDB files available: "
-                      f"{len(files)}\n\n"
-                  )
-
-                  for file in files:
-                      out.write(
-                          f"- `{file}`\n"
-                      )
-
-                  out.write(
-                      "\nSemanticDB was generated by the "
-                      "existing Scala build workflow.\n"
+                      "A SemanticDB artifact exists for "
+                      "this source area.\n\n"
                   )
 
                   out.write(
-                      "\nDo not assume that textual symbol "
-                      "names are equivalent when resolving "
-                      "Scala references.\n"
+                      "The artifact was generated by the "
+                      "Scala CI compilation.\n\n"
                   )
 
           print(
@@ -270,64 +315,38 @@ jobs:
           )
           PY
 
-      # ------------------------------------------------------------
-      # Build COMPLETE AI context
-      # ------------------------------------------------------------
+      # ============================================================
+      # Build complete AI context
+      # ============================================================
 
       - name: Build AI review context
         run: |
           python3 <<'PY'
           from pathlib import Path
 
-
           output = Path(
               "review-context/full-context.md"
           )
-
 
           with output.open(
               "w",
               encoding="utf-8"
           ) as out:
 
-              # ==================================================
-              # SEMANTIC INFORMATION
-              # ==================================================
+              # ----------------------------------------------------
+              # SemanticDB
+              # ----------------------------------------------------
 
               out.write(
-                  "# 1. SCALA SEMANTIC INFORMATION\n\n"
+                  "# 1. SCALA SEMANTICDB\n\n"
               )
 
               semantic = Path(
-                  "review-context/semantic-context.md"
-              )
-
-              if semantic.exists():
-
-                  out.write(
-                      semantic.read_text(
-                          encoding="utf-8",
-                          errors="ignore"
-                      )
-                  )
-
-              out.write("\n\n")
-
-
-              # ==================================================
-              # CHANGED FILES
-              # ==================================================
-
-              out.write(
-                  "# 2. CHANGED FILES\n\n"
-              )
-
-              changed = Path(
-                  "changed-files.txt"
+                  "review-context/semanticdb.md"
               )
 
               out.write(
-                  changed.read_text(
+                  semantic.read_text(
                       encoding="utf-8",
                       errors="ignore"
                   )
@@ -335,10 +354,27 @@ jobs:
 
               out.write("\n\n")
 
+              # ----------------------------------------------------
+              # Changed files
+              # ----------------------------------------------------
 
-              # ==================================================
-              # COMPLETE BEFORE
-              # ==================================================
+              out.write(
+                  "# 2. CHANGED FILES\n\n"
+              )
+
+              out.write(
+                  Path(
+                      "changed-files.txt"
+                  ).read_text(
+                      encoding="utf-8"
+                  )
+              )
+
+              out.write("\n\n")
+
+              # ----------------------------------------------------
+              # BEFORE
+              # ----------------------------------------------------
 
               out.write(
                   "# 3. COMPLETE SOURCE BEFORE PR\n\n"
@@ -371,10 +407,9 @@ jobs:
                       "\n```\n\n"
                   )
 
-
-              # ==================================================
-              # COMPLETE AFTER
-              # ==================================================
+              # ----------------------------------------------------
+              # AFTER
+              # ----------------------------------------------------
 
               out.write(
                   "# 4. COMPLETE SOURCE AFTER PR\n\n"
@@ -407,17 +442,12 @@ jobs:
                       "\n```\n\n"
                   )
 
-
-              # ==================================================
-              # COMPLETE DIFF
-              # ==================================================
+              # ----------------------------------------------------
+              # DIFF
+              # ----------------------------------------------------
 
               out.write(
                   "# 5. COMPLETE PR DIFF\n\n"
-              )
-
-              diff = Path(
-                  "review-context/pr.diff"
               )
 
               out.write(
@@ -425,35 +455,35 @@ jobs:
               )
 
               out.write(
-                  diff.read_text(
+                  Path(
+                      "review-context/pr.diff"
+                  ).read_text(
                       encoding="utf-8",
                       errors="ignore"
                   )
               )
 
               out.write(
-                  "\n```\n\n"
+                  "\n```\n"
               )
 
-
-          size = output.stat().st_size
-
           print(
-              f"Review context size: {size:,} bytes"
+              f"Context size: "
+              f"{output.stat().st_size:,} bytes"
           )
           PY
 
-      # ------------------------------------------------------------
-      # Install OpenAI-compatible client
-      # ------------------------------------------------------------
+      # ============================================================
+      # Install OpenAI client
+      # ============================================================
 
       - name: Install OpenAI client
         run: |
           python3 -m pip install --quiet openai
 
-      # ------------------------------------------------------------
+      # ============================================================
       # OVH REVIEW
-      # ------------------------------------------------------------
+      # ============================================================
 
       - name: Review with OVH
         env:
@@ -467,14 +497,12 @@ jobs:
 
           from openai import OpenAI
 
-
           context = Path(
               "review-context/full-context.md"
           ).read_text(
               encoding="utf-8",
               errors="ignore"
           )
-
 
           client = OpenAI(
               base_url=(
@@ -485,15 +513,14 @@ jobs:
               ],
           )
 
-
-          SYSTEM = """
+          system_prompt = """
           You are a senior Scala 3 engineer performing
           a production-grade GitHub pull request review.
 
-          You have the following information:
+          You receive:
 
           1. SemanticDB information generated by the project's
-             existing Scala build, when available.
+             Scala 3 compilation.
           2. Every changed Scala file BEFORE the PR.
           3. Every changed Scala file AFTER the PR.
           4. The complete PR diff.
@@ -502,25 +529,27 @@ jobs:
 
           Do NOT review the diff in isolation.
 
-          First understand the complete BEFORE implementation.
+          Understand the complete BEFORE implementation.
 
-          Then understand the complete AFTER implementation.
+          Understand the complete AFTER implementation.
 
           Then determine exactly what changed.
 
-          Use semantic information when available to reason about:
+          Use SemanticDB information whenever available to reason
+          about:
 
           - symbols
-          - references
-          - method signatures
-          - class hierarchy
-          - inheritance
+          - symbol definitions
+          - symbol references
           - method calls
-          - usages
-          - implicit/given resolution
           - type relationships
+          - inheritance
+          - class hierarchy
+          - usages
+          - givens
+          - implicit resolution
 
-          Scala 3-specific review:
+          Scala 3-specific concerns:
 
           - given / using
           - implicit resolution
@@ -534,9 +563,6 @@ jobs:
           - variance
           - pattern matching
           - exhaustive matches
-          - Option
-          - Either
-          - Try
           - Future
           - ExecutionContext
           - concurrency
@@ -546,23 +572,11 @@ jobs:
           - resource management
           - exception handling
 
-          If the project uses:
-
-          - Cats
-          - Cats Effect
-          - ZIO
-          - Akka
-          - Pekko
-
-          reason about their actual semantics.
-
           Also inspect for:
 
           - security vulnerabilities
-          - authentication problems
           - authorization problems
           - data corruption
-          - incorrect transactions
           - database bugs
           - serialization issues
           - API compatibility
@@ -571,7 +585,6 @@ jobs:
           - resource leaks
           - concurrency bugs
           - error handling bugs
-          - architectural regressions
 
           Only report issues that are:
 
@@ -583,43 +596,33 @@ jobs:
           Do NOT report:
 
           - formatting
-          - naming preferences
           - subjective style
+          - naming preferences
           - harmless refactoring
           - pre-existing bugs
           - speculative concerns
 
-          Every finding MUST correspond to a line changed
-          by the PR.
+          Every finding MUST correspond to a changed line.
 
           Severity:
 
-          CRITICAL:
-            Severe security, data loss, or production issue.
+          CRITICAL = severe security, data-loss, or production issue
+          HIGH     = significant bug or outage risk
+          MEDIUM   = real bug or meaningful reliability issue
+          LOW      = legitimate but minor issue
 
-          HIGH:
-            Significant bug, outage risk, or serious regression.
-
-          MEDIUM:
-            Real bug or meaningful reliability/performance issue.
-
-          LOW:
-            Legitimate but minor issue.
-
-          Return ONLY valid JSON.
-
-          Required schema:
+          Return ONLY valid JSON:
 
           {
             "summary": "Short overall assessment",
             "risk": "LOW|MEDIUM|HIGH|CRITICAL",
             "findings": [
               {
-                "file": "src/main/scala/foo/Bar.scala",
+                "file": "src/main/scala/Foo.scala",
                 "line": 123,
                 "severity": "CRITICAL|HIGH|MEDIUM|LOW",
                 "title": "Short issue title",
-                "body": "Clear explanation of the problem, impact, and fix."
+                "body": "Explain the issue, impact, and fix."
               }
             ]
           }
@@ -633,13 +636,12 @@ jobs:
           }
           """
 
-
           response = client.chat.completions.create(
               model="gpt-oss-120b",
               messages=[
                   {
                       "role": "system",
-                      "content": SYSTEM,
+                      "content": system_prompt,
                   },
                   {
                       "role": "user",
@@ -654,21 +656,9 @@ jobs:
               },
           )
 
-
           raw = response.choices[0].message.content
 
-
-          try:
-              review = json.loads(raw)
-
-          except Exception:
-
-              print(raw)
-
-              raise SystemExit(
-                  "OVH returned invalid JSON"
-              )
-
+          review = json.loads(raw)
 
           Path(
               "review-context/review.json"
@@ -680,7 +670,6 @@ jobs:
               encoding="utf-8"
           )
 
-
           print(
               json.dumps(
                   review,
@@ -689,17 +678,15 @@ jobs:
           )
           PY
 
-      # ------------------------------------------------------------
-      # Publish GitHub inline review
-      # ------------------------------------------------------------
+      # ============================================================
+      # Publish inline GitHub review
+      # ============================================================
 
       - name: Publish GitHub review
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
-          BASE_SHA: ${{ env.BASE_SHA }}
-          HEAD_SHA: ${{ env.HEAD_SHA }}
         run: |
           python3 <<'PY'
           import json
@@ -709,18 +696,17 @@ jobs:
 
           from pathlib import Path
 
-
           repo = os.environ["REPOSITORY"]
           pr = os.environ["PR_NUMBER"]
 
-          base = os.environ["BASE_SHA"]
-          head = os.environ["HEAD_SHA"]
-
-
-          def run(command):
+          def gh_api(*args):
 
               result = subprocess.run(
-                  command,
+                  [
+                      "gh",
+                      "api",
+                      *args
+                  ],
                   text=True,
                   capture_output=True
               )
@@ -735,6 +721,19 @@ jobs:
 
               return result.stdout
 
+          # --------------------------------------------------------
+          # Get diff
+          # --------------------------------------------------------
+
+          diff = gh_api(
+              f"repos/{repo}/pulls/{pr}",
+              "-H",
+              "Accept: application/vnd.github.v3.diff"
+          )
+
+          # --------------------------------------------------------
+          # Load review
+          # --------------------------------------------------------
 
           review = json.loads(
               Path(
@@ -742,31 +741,13 @@ jobs:
               ).read_text()
           )
 
-
           findings = review.get(
               "findings",
               []
           )
 
-
           # --------------------------------------------------------
-          # Get exact PR diff
-          # --------------------------------------------------------
-
-          diff = run([
-              "git",
-              "diff",
-              "--find-renames",
-              "--find-copies",
-              base,
-              head,
-              "--",
-              "*.scala",
-          ])
-
-
-          # --------------------------------------------------------
-          # Convert file + new line into GitHub diff position
+          # Map changed lines to GitHub diff positions
           # --------------------------------------------------------
 
           positions = {}
@@ -775,18 +756,15 @@ jobs:
           new_line = None
           position = 0
 
-
           for line in diff.splitlines():
 
               position += 1
-
 
               if line.startswith("+++ b/"):
 
                   current_file = line[6:]
 
                   continue
-
 
               if line.startswith("@@"):
 
@@ -803,15 +781,12 @@ jobs:
 
                   continue
 
-
               if (
                   current_file is None
                   or new_line is None
               ):
                   continue
 
-
-              # Added line
               if (
                   line.startswith("+")
                   and not line.startswith("+++")
@@ -825,8 +800,6 @@ jobs:
 
                   continue
 
-
-              # Context line
               if (
                   not line.startswith("-")
                   and not line.startswith("---")
@@ -834,9 +807,11 @@ jobs:
 
                   new_line += 1
 
+          # --------------------------------------------------------
+          # Build inline comments
+          # --------------------------------------------------------
 
           comments = []
-
 
           for finding in findings:
 
@@ -846,28 +821,26 @@ jobs:
               if not file or not line:
                   continue
 
-
               try:
-                  line = int(line)
-              except Exception:
-                  continue
 
+                  line = int(line)
+
+              except Exception:
+
+                  continue
 
               position = positions.get(
                   (file, line)
               )
 
-
               if position is None:
 
                   print(
-                      f"Could not map finding "
-                      f"to changed line: "
+                      f"Cannot map finding: "
                       f"{file}:{line}"
                   )
 
                   continue
-
 
               severity = finding.get(
                   "severity",
@@ -884,22 +857,18 @@ jobs:
                   ""
               )
 
-
               comments.append({
                   "path": file,
                   "position": position,
                   "body": (
                       f"**{severity} — {title}**\n\n"
                       f"{body}\n\n"
-                      "_ScalaSemantic/SemanticDB + "
+                      "_Scala 3 SemanticDB + "
                       "OVH gpt-oss-120b_"
                   )
               })
 
-
-          # GitHub limits review payloads.
           comments = comments[:50]
-
 
           summary = review.get(
               "summary",
@@ -911,26 +880,23 @@ jobs:
               "LOW"
           )
 
-
           review_body = (
               "## 🤖 Scala AI Code Review\n\n"
               f"**Risk:** `{risk}`\n\n"
               f"{summary}\n\n"
               "Review context:\n"
-              "- Scala 3 SemanticDB from build\n"
+              "- Scala 3 SemanticDB\n"
               "- Complete BEFORE source\n"
               "- Complete AFTER source\n"
               "- Complete PR diff\n"
               "- OVH `gpt-oss-120b`\n"
           )
 
-
           payload = {
               "body": review_body,
               "event": "COMMENT",
               "comments": comments,
           }
-
 
           result = subprocess.run(
               [
@@ -940,13 +906,12 @@ jobs:
                   "--method",
                   "POST",
                   "--input",
-                  "-",
+                  "-"
               ],
               input=json.dumps(payload),
               text=True,
               capture_output=True
           )
-
 
           if result.returncode != 0:
 
@@ -956,16 +921,15 @@ jobs:
                   result.returncode
               )
 
-
           print(
               f"Published {len(comments)} "
-              "inline review comments."
+              "inline comments."
           )
           PY
 
-      # ------------------------------------------------------------
-      # Keep review context for debugging
-      # ------------------------------------------------------------
+      # ============================================================
+      # Save review context
+      # ============================================================
 
       - name: Upload review context
         if: always()
@@ -974,6 +938,7 @@ jobs:
           name: scala-ai-review
           path: |
             changed-files.txt
+            pr.json
+            pr-files.json
             review-context/
           retention-days: 7
-          
