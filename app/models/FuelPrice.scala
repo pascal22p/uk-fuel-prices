@@ -48,7 +48,7 @@ object FuelPrice {
   @SuppressWarnings(Array("org.wartremover.warts.EnumValueOf"))
   val fuelPriceWithStationInfoParser: RowParser[(String, String, FuelPrice)] = (
       get[String]("nodeId") ~
-      get[String]("trading_name") ~
+      get[String]("tradingName") ~
       get[Double]("price") ~
       get[String]("fuelType") ~
       get[Instant]("priceLastUpdated") ~

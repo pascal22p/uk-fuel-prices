@@ -24,11 +24,11 @@ class HomeController @Inject()(
     for {
       totalFuelStations <- getSqlQueries.getTotalFuelStations
       totalFuelPrices <- getSqlQueries.getTotalFuelPrices
-      lastUpdates <- getSqlQueries.getLatestFuelPricesWithStation(5)
+      lastUpdates <- getSqlQueries.getLatestFuelPricesWithStation(20)
     } yield {
-     Ok(homepageView(totalFuelStations, totalFuelPrices, lastUpdates)) 
+     Ok(homepageView(totalFuelStations, totalFuelPrices, lastUpdates))
     }
-    
+
     //Future.successful(Redirect(routes.SearchByPostcodeController.showPostcodeForm()))
   }
 
