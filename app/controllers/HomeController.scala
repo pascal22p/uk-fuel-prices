@@ -25,7 +25,7 @@ class HomeController @Inject()(
     val x = Future {
       Redirect(routes.SearchByPostcodeController.showPostcodeForm())
     }
-    val result = Await.result(x, Duration.Inf) // blocking + infinite timeout
+    Await.result(x, Duration.Inf) // blocking + infinite timeout
   }
 
   def fuelStationDetails(nodeId: String): Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
