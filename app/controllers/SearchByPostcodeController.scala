@@ -32,7 +32,7 @@ class SearchByPostcodeController @Inject()(
                                 searchStationsView: SearchStationsView
                               )(implicit ec: ExecutionContext) extends BaseController with I18nSupport with LoggingWithRequest {
 
-  def showPostcodeForm: Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
+  def showPostcodeForm: Action[AnyContent] = Action.async { implicit authenticatedRequest =>
     journeyCacheRepository.get(ChoosePostcodeQuestion).map { defaults =>
       val form = PostcodeForm.postcodeForm.filledWith(defaults)
       Ok(inputPostcodeView(form))
