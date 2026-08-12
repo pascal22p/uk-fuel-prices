@@ -585,6 +585,9 @@ jobs:
           - resource leaks
           - concurrency bugs
           - error handling bugs
+          - use of play-frontend-hmrc component when they exist
+          - use of http-verbs for http calls
+          - data that looks like PII
 
           Only report issues that are:
 
