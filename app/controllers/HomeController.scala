@@ -9,6 +9,8 @@ import play.api.mvc.*
 import queries.GetSqlQueries
 import views.html.StationView
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
