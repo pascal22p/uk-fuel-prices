@@ -19,8 +19,11 @@ class HomeController @Inject()(
                                 stationView: StationView
                               )(implicit ec: ExecutionContext) extends BaseController with I18nSupport{
 
-  def index(): Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
-    Future.successful(Redirect(routes.SearchByPostcodeController.showPostcodeForm()))
+  def index(): Action[AnyContent] = authAction { implicit authenticatedRequest =>
+    val x = Future {
+      Redirect(routes.SearchByPostcodeController.showPostcodeForm())
+    }
+    val result = Await.result(x, Duration.Inf) // blocking + infinite timeout
   }
 
   def fuelStationDetails(nodeId: String): Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
