@@ -36,10 +36,10 @@ jobs:
         run: |
           set -euo pipefail
 
-          PR_JSON=$(gh api \
-            "repos/${REPOSITORY}/actions/runs/${RUN_ID}/pulls")
+          RUN_JSON=$(gh api \
+            "repos/${REPOSITORY}/actions/runs/${RUN_ID}")
 
-          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.[0].number')
+          PR_NUMBER=$(echo "$RUN_JSON" | jq -r '.pull_requests[0].number')
 
           if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
             echo "No pull request found."
@@ -713,7 +713,8 @@ jobs:
 
               if result.returncode != 0:
 
-                  print(result.stderr)
+                  print("STDOUT:", result.stdout)
+                  print("STDERR:", result.stderr)
 
                   raise SystemExit(
                       result.returncode
@@ -748,6 +749,13 @@ jobs:
 
           # --------------------------------------------------------
           # Map changed lines to GitHub diff positions
+          #
+          # IMPORTANT: `position` is the offset from the start of
+          # EACH FILE's diff section, not the whole multi-file diff.
+          # It must be reset at every "diff --git" boundary, or
+          # positions for every file after the first will point
+          # outside that file's diff hunk and GitHub will reject
+          # the review with a 422.
           # --------------------------------------------------------
 
           positions = {}
@@ -757,6 +765,14 @@ jobs:
           position = 0
 
           for line in diff.splitlines():
+
+              if line.startswith("diff --git"):
+
+                  current_file = None
+                  new_line = None
+                  position = 0
+
+                  continue
 
               position += 1
 
@@ -892,6 +908,13 @@ jobs:
               "- OVH `gpt-oss-120b`\n"
           )
 
+          # --------------------------------------------------------
+          # Try full review with inline comments.
+          # Fall back to a summary-only review if GitHub rejects
+          # any of the inline comments (e.g. bad position mapping),
+          # so a single bad comment never fails the whole review.
+          # --------------------------------------------------------
+
           payload = {
               "body": review_body,
               "event": "COMMENT",
@@ -915,16 +938,50 @@ jobs:
 
           if result.returncode != 0:
 
-              print(result.stderr)
+              print("Inline comment review failed, falling back to summary-only:")
+              print("STDOUT:", result.stdout)
+              print("STDERR:", result.stderr)
 
-              raise SystemExit(
-                  result.returncode
+              fallback_payload = {
+                  "body": review_body,
+                  "event": "COMMENT",
+              }
+
+              result = subprocess.run(
+                  [
+                      "gh",
+                      "api",
+                      f"repos/{repo}/pulls/{pr}/reviews",
+                      "--method",
+                      "POST",
+                      "--input",
+                      "-"
+                  ],
+                  input=json.dumps(fallback_payload),
+                  text=True,
+                  capture_output=True
               )
 
-          print(
-              f"Published {len(comments)} "
-              "inline comments."
-          )
+              if result.returncode != 0:
+
+                  print("STDOUT:", result.stdout)
+                  print("STDERR:", result.stderr)
+
+                  raise SystemExit(
+                      result.returncode
+                  )
+
+              print(
+                  "Published summary-only review "
+                  "(inline comments failed)."
+              )
+
+          else:
+
+              print(
+                  f"Published {len(comments)} "
+                  "inline comments."
+              )
           PY
 
       # ============================================================
