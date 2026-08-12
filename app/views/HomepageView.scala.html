@@ -1,0 +1,121 @@
+@import models._
+@import views.html.Main
+
+@this(
+        main: Main
+)
+
+@(
+        totalFuelStations: Int,
+        totalFuelPrices: Int,
+        fuelPricesForStations: Seq[FuelPriceForStation]
+)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
+
+@main() {
+
+    <div class="govuk-grid-row">
+
+        <div class="govuk-grid-column-one-half">
+            <div class="govuk-panel govuk-panel--confirmation">
+                <h2 class="govuk-panel__title">
+                @totalFuelStations
+                </h2>
+                <div class="govuk-panel__body">
+                    Fuel stations
+                </div>
+            </div>
+        </div>
+
+        <div class="govuk-grid-column-one-half">
+            <div class="govuk-panel govuk-panel--confirmation">
+                <h2 class="govuk-panel__title">
+                @totalFuelPrices
+                </h2>
+                <div class="govuk-panel__body">
+                    Fuel prices
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <h2 class="govuk-heading-l">
+        Recently updated prices
+    </h2>
+
+    @if(fuelPricesForStations.isEmpty) {
+
+        <p class="govuk-body">
+            No fuel prices are currently available.
+        </p>
+
+    } else {
+
+        <div class="govuk-table-responsive">
+            <table class="govuk-table">
+                <caption class="govuk-table__caption govuk-table__caption--m">
+                    5 most recently updated fuel prices
+                </caption>
+
+                <thead class="govuk-table__head">
+                    <tr class="govuk-table__row">
+                        <th scope="col" class="govuk-table__header">
+                            Station
+                        </th>
+                        <th scope="col" class="govuk-table__header">
+                            Fuel
+                        </th>
+                        <th scope="col" class="govuk-table__header govuk-table__header--numeric">
+                            Price
+                        </th>
+                        <th scope="col" class="govuk-table__header">
+                            Updated
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody class="govuk-table__body">
+
+                @for(station <- fuelPricesForStations) {
+
+                    @for((price, index) <- station.fuelPrices.zipWithIndex) {
+
+                        <tr class="govuk-table__row">
+
+                            @if(index == 0) {
+                                <th
+                                scope="rowgroup"
+                                class="govuk-table__header"
+                                rowspan="@station.fuelPrices.size">
+
+                                    <a
+                                    class="govuk-link"
+                                    href="@controllers.routes.HomeController.fuelStationDetails(station.nodeId).url">
+                                    @station.tradingName
+                                    </a>
+
+                                </th>
+                            }
+
+                        <td class="govuk-table__cell">
+                        @price.fuelType
+                        </td>
+
+                        <td class="govuk-table__cell govuk-table__cell--numeric">
+                        @price.price
+                        </td>
+
+                        <td class="govuk-table__cell">
+                        @price.priceLastUpdated
+                        </td>
+
+                        </tr>
+                    }
+
+                }
+
+                </tbody>
+            </table>
+        </div>
+    }
+}
