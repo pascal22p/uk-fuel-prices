@@ -748,21 +748,25 @@ jobs:
           )
 
           # --------------------------------------------------------
-          # Map changed lines to GitHub diff positions
+          # Determine which lines are valid "RIGHT-side" targets
           #
-          # IMPORTANT: `position` is the offset from the start of
-          # EACH FILE's diff section, not the whole multi-file diff.
-          # It must be reset at every "diff --git" boundary, or
-          # positions for every file after the first will point
-          # outside that file's diff hunk and GitHub will reject
-          # the review with a 422.
+          # GitHub's review API accepts `line` + `side` directly
+          # instead of a hand-computed `position` offset. This
+          # avoids manually reconstructing GitHub's diff-position
+          # math (which is easy to get subtly wrong per-file).
+          #
+          # GitHub still requires the (file, line) to actually
+          # appear in the diff it computed, so we build the set of
+          # valid lines per file: any line shown on the right-hand
+          # side of a hunk (added lines AND unchanged context
+          # lines), since GitHub allows comments on context lines
+          # too, not only added ones.
           # --------------------------------------------------------
 
-          positions = {}
+          valid_lines = {}
 
           current_file = None
           new_line = None
-          position = 0
 
           for line in diff.splitlines():
 
@@ -770,11 +774,8 @@ jobs:
 
                   current_file = None
                   new_line = None
-                  position = 0
 
                   continue
-
-              position += 1
 
               if line.startswith("+++ b/"):
 
@@ -808,9 +809,9 @@ jobs:
                   and not line.startswith("+++")
               ):
 
-                  positions[
-                      (current_file, new_line)
-                  ] = position
+                  valid_lines.setdefault(
+                      current_file, set()
+                  ).add(new_line)
 
                   new_line += 1
 
@@ -820,6 +821,11 @@ jobs:
                   not line.startswith("-")
                   and not line.startswith("---")
               ):
+
+                  # context line: still a valid RIGHT-side target
+                  valid_lines.setdefault(
+                      current_file, set()
+                  ).add(new_line)
 
                   new_line += 1
 
@@ -845,18 +851,36 @@ jobs:
 
                   continue
 
-              position = positions.get(
-                  (file, line)
-              )
+              file_lines = valid_lines.get(file, set())
 
-              if position is None:
+              target_line = line
 
-                  print(
-                      f"Cannot map finding: "
-                      f"{file}:{line}"
-                  )
+              if line not in file_lines:
 
-                  continue
+                  # AI line numbers are sometimes off by one or
+                  # two from the exact diff hunk boundary; snap to
+                  # the nearest valid line within a small window
+                  # rather than dropping the finding outright.
+                  candidates = [
+                      l for l in file_lines
+                      if abs(l - line) <= 3
+                  ]
+
+                  if candidates:
+
+                      target_line = min(
+                          candidates,
+                          key=lambda l: abs(l - line)
+                      )
+
+                  else:
+
+                      print(
+                          f"Cannot map finding: "
+                          f"{file}:{line}"
+                      )
+
+                      continue
 
               severity = finding.get(
                   "severity",
@@ -875,7 +899,8 @@ jobs:
 
               comments.append({
                   "path": file,
-                  "position": position,
+                  "line": target_line,
+                  "side": "RIGHT",
                   "body": (
                       f"**{severity} — {title}**\n\n"
                       f"{body}\n\n"
