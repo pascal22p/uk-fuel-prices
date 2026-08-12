@@ -586,6 +586,7 @@ jobs:
           - concurrency bugs
           - error handling bugs
           - use of play-frontend-hmrc component when they exist
+          - make sure the right govuk classes are set on html tags
           - use of http-verbs for http calls
           - data that looks like PII
 
