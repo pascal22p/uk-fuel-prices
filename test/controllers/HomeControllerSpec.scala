@@ -35,7 +35,7 @@ class HomeControllerSpec extends BaseSpec {
       Future.successful(1)
     )
     when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
-      Future.successful(2)
+      Future.successful(3)
     )
     when(mockGetSqlQueries.getLatestFuelPricesWithStation(any())).thenReturn(
       Future.successful(Seq(FuelPriceForStation(
