@@ -1,14 +1,18 @@
 package controllers.admin
 
 import actions.AuthJourney
+import cats.data.EitherT
 import anorm.SQL
 import anorm.SqlParser.scalar
+import models.LockId
+import models.forms.NodeIdForm
 import play.api.Logging
 import play.api.db.Database
 import play.api.i18n.I18nSupport
 import play.api.mvc.*
-import services.FuelPriceService
-import uk.gov.hmrc.http.HeaderCarrier
+import queries.{GetSqlQueries, InsertSqlQueries}
+import services.{FuelPriceService, FuelStationsService}
+import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import views.html.admin.{IndexView, UpdateCompletedView}
 
@@ -21,6 +25,9 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 class AdminController @Inject()(
     authJourney: AuthJourney,
     fuelPriceService: FuelPriceService,
+    fuelStationsService: FuelStationsService,
+    insertSqlQueries: InsertSqlQueries,
+    getSqlQueries: GetSqlQueries,
     db: Database,
     updateCompletedView: UpdateCompletedView,
     indexView: IndexView,
@@ -31,7 +38,10 @@ class AdminController @Inject()(
     with Logging {
 
   def index: Action[AnyContent] = authJourney.authWithAdminRight.async { implicit request =>
-    Future.successful(Ok(indexView()))
+    getSqlQueries.getLastUpdate.map { lastUpdate =>
+      val form = NodeIdForm.nodeIdForm
+      Ok(indexView(form, lastUpdate))
+    }
   }
   
   def updateFuelPrices(): Action[AnyContent] = authJourney.authWithAdminRight.async { implicit authenticatedRequest =>
@@ -50,10 +60,35 @@ class AdminController @Inject()(
     )
   }
 
+  def updatePostFuelStation(): Action[AnyContent] = authJourney.authWithAdminRight { implicit authenticatedRequest =>
+    authenticatedRequest.request.queryString.get("nodeId").flatMap(_.headOption).fold(
+      BadRequest("No node id in the url")
+    ) { nodeId =>
+      Redirect(controllers.admin.routes.AdminController.updateFuelStation(nodeId))
+    }
+  }
+
+  def updateFuelStation(nodeId: String): Action[AnyContent] = authJourney.authWithAdminRight.async { implicit authenticatedRequest =>
+    implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(authenticatedRequest, authenticatedRequest.session)
+
+    fuelStationsService.findFuelStations(nodeId).flatMap {
+      case Some(station) =>
+        EitherT.liftF[Future, UpstreamErrorResponse, Int](insertSqlQueries.insertStations(Seq(station))).map { _ =>
+          Ok(updateCompletedView())
+        }
+      case None =>
+        EitherT.rightT(NotFound(s"No station found with nodeId $nodeId"))
+    }.fold(
+      error => InternalServerError(error.message),
+      identity
+    )
+  }
+
+  @SuppressWarnings(Array("org.wartremover.warts.ToString"))
   def partialUpdate(): Action[AnyContent] = authJourney.authWithAdminRight.async { implicit authenticatedRequest =>
     implicit val hc: HeaderCarrier = HeaderCarrierConverter.fromRequestAndSession(authenticatedRequest, authenticatedRequest.session)
 
-    val lockId = "stationsAndPricesLock"
+    val lockId = LockId.stationsAndPricesLock
 
     Future.successful(db.withTransaction { implicit conn =>
       val overlapInSeconds = 60
@@ -89,7 +124,7 @@ class AdminController @Inject()(
                 """UPDATE fuel_locks
                   |SET lastUpdate = {now}
                   |WHERE id = {lockId}""".stripMargin)
-                .on("lockId" -> lockId, "now" -> now)
+                .on("lockId" -> lockId.toString, "now" -> now)
                 .executeUpdate()
               Ok(updateCompletedView())
             }

@@ -10,7 +10,7 @@ enablePlugins(GitPlugin)
 
 ThisBuild / version := "0.1.0"
 ThisBuild / organization := "parois.net"
-ThisBuild / scalaVersion := "3.8.3"
+ThisBuild / scalaVersion := "3.8.4"
 ThisBuild / scalafmtOnCompile := true
 
 Test / parallelExecution := true
@@ -95,16 +95,14 @@ lazy val ukFuelPrice = (project in file("."))
   .enablePlugins(PlayScala)
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(SbtWeb)
-  .enablePlugins(JavaAgent)
   .settings(
-    javaAgents += "io.pyroscope" % "agent" % "2.5.2",
     PlayKeys.playDefaultPort := 9234,
     libraryDependencies ++= LibDependencies.all,
     dependencyOverrides ++= Seq(
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.16.1",
-      "com.fasterxml.jackson.core"    % "jackson-databind"     % "2.16.1",
-      "com.fasterxml.jackson.core"    % "jackson-core"         % "2.16.1",
-      "com.fasterxml.jackson.core"    % "jackson-annotations"  % "2.16.1"
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.22.1",
+      "com.fasterxml.jackson.core"    % "jackson-databind"     % "2.22.1",
+      "com.fasterxml.jackson.core"    % "jackson-core"         % "2.22.1",
+      "com.fasterxml.jackson.core"    % "jackson-annotations"  % "2.22"
     ),
     scoverageSettings,
     dockerBuildxSettings,
@@ -121,7 +119,8 @@ lazy val ukFuelPrice = (project in file("."))
     TwirlKeys.templateImports ++= Seq(
       "uk.gov.hmrc.govukfrontend.views.html.components._"
     ),
-    semanticdbEnabled := false,
+    semanticdbEnabled := true,
+    semanticdbTargetRoot := (Compile / target).value / "semanticdb",
     scalacOptions ++= Seq(
       "-no-indent",
       "-deprecation",

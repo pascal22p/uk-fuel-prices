@@ -40,6 +40,21 @@
     }
 }
 
+@favouriteNodeId: Seq[ServiceNavigationItem] = @{
+    println(authenticatedRequest.localSession.sessionData.userData)
+    authenticatedRequest.localSession.sessionData.userData.flatMap(data => Option(data.favouriteNodeId).filter(_.nonEmpty)) match {
+        case None => Seq.empty
+        case Some(nodeId) => Seq(ServiceNavigationItem(
+            content = Text("Favourite"),
+            href = controllers.routes.HomeController.fuelStationDetails(nodeId).url,
+            active = false,
+            current = false,
+            classes = "",
+            attributes = Map.empty
+        ))
+    }
+}
+
 <!DOCTYPE html>
 <html lang="@messages.lang.code" class="govuk-template">
     <head>
@@ -107,7 +122,7 @@
                             current = false,
                             classes = "",
                             attributes = Map.empty
-                        )),
+                        )) ++ favouriteNodeId,
                     navigationClasses = "",
                     navigationId = "navigation",
                     navigationLabel = Some("navigationLabel"),
