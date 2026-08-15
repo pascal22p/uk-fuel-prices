@@ -122,6 +122,7 @@ lazy val ukFuelPrice = (project in file("."))
     semanticdbEnabled := true,
     semanticdbTargetRoot := (Compile / target).value / "semanticdb",
     scalacOptions ++= Seq(
+      "-semanticdb-text",
       "-no-indent",
       "-deprecation",
       "-feature",
