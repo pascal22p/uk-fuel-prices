@@ -1,0 +1,29 @@
+name: Scala AI Code Review - 2
+
+on:
+  workflow_run:
+    workflows:
+      - Scala CI
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  actions: read
+
+jobs:
+  review:
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request'
+    uses: pascal22p/shared-workflows/.github/workflows/AIreview.yml@main
+    with:
+      run_id: ${{ github.event.workflow_run.id }}
+      model: "Qwen3.5-397B-A17B"
+      reasoning_effort: "high"
+    secrets:
+      OVH_AI_ENDPOINTS_API_KEY: ${{ secrets.OVH_AI_ENDPOINTS_API_KEY }}
+
+      
