@@ -31,6 +31,7 @@ class HomeController @Inject()(
      Ok(homepageView(totalFuelStations, totalFuelPrices, lastUpdates))
     }
 
+    //todo: Add link to search journey
     //Future.successful(Redirect(routes.SearchByPostcodeController.showPostcodeForm()))
   }
 
