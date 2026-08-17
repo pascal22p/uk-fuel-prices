@@ -7,7 +7,7 @@ import models.*
 import play.api.db.Database
 import utils.BoundingBox
 
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDateTime}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
 
@@ -82,7 +82,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
             fuelPrices = rowsPerStation.map(_._3)
           )
       }.toSeq
-      .sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(Ordering[java.time.Instant].reverse)
+      .sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(using Ordering[Instant].reverse)
   }(using databaseExecutionContext)
 
   def getUserData(username: String): OptionT[Future, UserData] = OptionT(Future {
