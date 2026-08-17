@@ -30,6 +30,8 @@
 
 @main() {
 
+    <p class="govuk-body-m"><a class="govuk-link" href="@routes.SearchByPostcodeController.showPostcodeForm()">Find fuel prices in your area by searching by postcode</a></p>
+
     <div class="govuk-grid-row">
 
         <div class="govuk-grid-column-one-half">
@@ -123,7 +125,7 @@
                                 ),
                                 TableRow(
                                     content = Text(
-                                        f"£${price.price}%.2f"
+                                        f"${price.price}%.1fp"
                                     ),
                                     classes = "govuk-table__cell--numeric"
                                 ),
