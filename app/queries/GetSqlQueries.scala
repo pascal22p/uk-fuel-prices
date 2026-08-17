@@ -82,6 +82,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
             fuelPrices = rowsPerStation.map(_._3)
           )
       }.toSeq
+      .sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(Ordering[java.time.Instant].reverse)
   }(using databaseExecutionContext)
 
   def getUserData(username: String): OptionT[Future, UserData] = OptionT(Future {

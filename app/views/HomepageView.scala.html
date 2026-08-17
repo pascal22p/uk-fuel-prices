@@ -30,7 +30,7 @@
 
 @main() {
 
-    <div>
+    <div class="govuk-grid-row">
 
         <div class="govuk-grid-column-one-half">
             <div class="govuk-panel govuk-panel--confirmation">
@@ -123,7 +123,7 @@
                                 ),
                                 TableRow(
                                     content = Text(
-                                        price.price.toString
+                                        f"£${price.price}%.2f"
                                     ),
                                     classes = "govuk-table__cell--numeric"
                                 ),
