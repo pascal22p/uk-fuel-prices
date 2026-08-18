@@ -102,6 +102,11 @@ The application can be configured using environment variables. Key variables inc
 
 ## Docker Deployment
 
+A pre-built Docker image is available on [Docker Hub](https://hub.docker.com/r/pascal22p/uk-fuel-prices).
+
+- **Continuous Deployment**: A new image is automatically pushed to the `latest` tag on every merge to the `main` branch.
+- **Releases**: Note that there are no tagged releases yet.
+
 A `docker-compose.yml` is provided for deploying the application. Note that it expects some environment variables to be set (e.g., in a `.env` file).
 
 To build the Docker image locally:
