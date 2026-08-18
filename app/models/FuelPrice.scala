@@ -44,7 +44,7 @@ object FuelPrice {
     case price ~ fuelType ~ priceLastUpdated ~ priceChangeEffectiveTimestamp =>
       FuelPrice(price, FuelType.valueOf(fuelType), priceLastUpdated, priceChangeEffectiveTimestamp)
   }
-
+  
   @SuppressWarnings(Array("org.wartremover.warts.EnumValueOf"))
   val fuelPriceWithStationInfoParser: RowParser[(String, String, FuelPrice)] = (
       get[String]("nodeId") ~
