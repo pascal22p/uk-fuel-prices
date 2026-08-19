@@ -1,0 +1,146 @@
+@import models._
+@import views.html.Main
+@import java.time.format.DateTimeFormatter
+@import java.time.ZoneId
+
+@this(
+        main: Main,
+        govukTable: GovukTable
+)
+
+@(
+        totalFuelStations: Int,
+        totalFuelPrices: Int,
+        fuelPricesForStations: Seq[FuelPriceForStation]
+)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
+
+@dateFormatter = @{
+    DateTimeFormatter
+    .ofPattern("d MMM yyyy, HH:mm")
+    .withZone(ZoneId.of("Europe/London"))
+}
+
+@stationLink(station: FuelPriceForStation) = {
+    <a
+    class="govuk-link"
+    href="@controllers.routes.HomeController.fuelStationDetails(station.nodeId).url">
+    @station.tradingName
+    </a>
+}
+
+@main() {
+
+    <p class="govuk-body-m"><a class="govuk-link" href="@routes.SearchByPostcodeController.showPostcodeForm()">Find fuel prices in your area by searching by postcode</a></p>
+
+    <div class="govuk-grid-row">
+
+        <div class="govuk-grid-column-one-half">
+            <div class="govuk-panel govuk-panel--confirmation">
+                <h2 class="govuk-panel__title">
+                @totalFuelStations
+                </h2>
+                <div class="govuk-panel__body">
+                    @messages("homepage.fuelStations")
+                </div>
+            </div>
+        </div>
+
+        <div class="govuk-grid-column-one-half">
+            <div class="govuk-panel govuk-panel--confirmation">
+                <h2 class="govuk-panel__title">
+                @totalFuelPrices
+                </h2>
+                <div class="govuk-panel__body">
+                    @messages("homepage.fuelPrices")
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <h2 class="govuk-heading-l">
+        @messages("homepage.recentlyUpdatedPrices")
+    </h2>
+
+    @if(fuelPricesForStations.isEmpty) {
+
+        <p class="govuk-body">
+            @messages("homepage.noFuelPrices")
+        </p>
+
+    } else {
+
+        <div class="govuk-table-responsive">
+        @govukTable(
+            Table(
+                caption = Some(messages("homepage.lastUpdatedPrices")),
+                captionClasses = "govuk-table__caption--m",
+
+                head = Some(
+                    Seq(
+                        HeadCell(
+                            content = Text(messages("homepage.station"))
+                        ),
+                        HeadCell(
+                            content = Text(messages("homepage.fuel"))
+                        ),
+                        HeadCell(
+                            content = Text(messages("homepage.prices")),
+                            classes = "govuk-table__header--numeric"
+                        ),
+                        HeadCell(
+                            content = Text(messages("homepage.updated"))
+                        )
+                    )
+                ),
+
+                rows = fuelPricesForStations.flatMap { station =>
+                    station.fuelPrices.zipWithIndex.map {
+                        case (price, index) =>
+
+                            val stationCell =
+                                if (index == 0) {
+                                    Seq(
+                                        TableRow(
+                                            content = HtmlContent(
+                                                stationLink(station)
+                                            ),
+                                            rowspan = Some(
+                                                station.fuelPrices.size
+                                            ),
+                                            attributes = Map(
+                                                "scope" -> "rowgroup"
+                                            )
+                                        )
+                                    )
+                                } else {
+                                    Seq.empty[TableRow]
+                                }
+
+                            stationCell ++ Seq(
+                                TableRow(
+                                    content = Text(
+                                        price.fuelType.toString
+                                    )
+                                ),
+                                TableRow(
+                                    content = Text(
+                                        f"${price.price}%.1fp"
+                                    ),
+                                    classes = "govuk-table__cell--numeric"
+                                ),
+                                TableRow(
+                                    content = Text(
+                                        dateFormatter.format(
+                                            price.priceLastUpdated
+                                        )
+                                    )
+                                )
+                            )
+                    }
+                }
+            )
+        )
+        </div>
+    }
+}

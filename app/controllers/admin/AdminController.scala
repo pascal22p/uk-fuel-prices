@@ -38,7 +38,7 @@ class AdminController @Inject()(
     with Logging {
 
   def index: Action[AnyContent] = authJourney.authWithAdminRight.async { implicit request =>
-    getSqlQueries.getLastUpdate.map { lastUpdate =>
+    getSqlQueries.getLastUpdateForLock.map { lastUpdate =>
       val form = NodeIdForm.nodeIdForm
       Ok(indexView(form, lastUpdate))
     }

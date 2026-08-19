@@ -16,3 +16,14 @@ error.radius.too.wide=Radius must be between 1 and 100 miles
 SearByPostcode.ChoosePostcodeQuestion.postcode=Postcode
 SearByPostcode.ChooseFuelTypeQuestion.fuelType=Fuel type
 SearByPostcode.ChooseRadiusQuestion.radiusInMiles=Radius in miles
+
+homepage.fuelStations = Fuel stations
+homepage.fuelPrices = Fuel prices
+homepage.recentlyUpdatedPrices = Recently updated prices
+homepage.noFuelPrices = No fuel prices are currently available.
+homepage.lastUpdatedPrices = Last updated fuel prices
+homepage.station = Station
+homepage.fuel = Fuel
+homepage.prices = Prices
+homepage.updated = Updated
+

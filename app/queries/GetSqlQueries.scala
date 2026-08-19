@@ -7,13 +7,83 @@ import models.*
 import play.api.db.Database
 import utils.BoundingBox
 
-import java.time.LocalDateTime
+import java.time.{Instant, LocalDateTime}
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.Future
 
 @Singleton
 final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: DatabaseExecutionContext)
     extends LoggingWithRequest {
+
+  def getTotalFuelStations: Future[Int] = Future {
+    db.withConnection { implicit conn =>
+      SQL(
+        """SELECT COUNT(*) as total
+          |FROM fuel_stations""".stripMargin)
+        .as(SqlParser.scalar[Int].single)
+    }
+  }(using databaseExecutionContext)
+
+  def getTotalFuelPrices: Future[Int] = Future {
+    db.withConnection { implicit conn =>
+      SQL(
+        """SELECT COUNT(*) as total
+          |FROM fuel_prices""".stripMargin)
+        .as(SqlParser.scalar[Int].single)
+    }
+  }(using databaseExecutionContext)
+
+  def getLatestFuelPricesWithStation(numberOfResult: Int): Future[Seq[FuelPriceForStation]] = Future {
+    val rows = db.withConnection { implicit conn =>
+      SQL(
+        s"""SELECT
+           |    nodeId,
+           |    tradingName,
+           |    fuelType,
+           |    priceChangeEffectiveTimestamp,
+           |    priceLastUpdated,
+           |    price
+           |FROM (
+           |    SELECT
+           |        HEX(fp.nodeId_bin) AS nodeId,
+           |        fs.tradingName AS tradingName,
+           |        ft.name AS fuelType,
+           |        fp.priceChangeEffectiveTimestamp AS priceChangeEffectiveTimestamp,
+           |        fp.priceLastUpdated AS priceLastUpdated,
+           |        fp.price AS price,
+           |        ROW_NUMBER() OVER (
+           |            PARTITION BY fp.nodeId_bin, fp.fuelTypeId
+           |            ORDER BY fp.lastUpdated DESC
+           |        ) AS rowNumber
+           |    FROM fuel_prices fp
+           |    LEFT JOIN fuel_types ft
+           |        ON fp.fuelTypeId = ft.id
+           |    LEFT JOIN fuel_stations fs
+           |        ON fp.nodeId_bin = fs.nodeId_bin
+           |) latest
+           |WHERE rowNumber = 1
+           |ORDER BY priceLastUpdated DESC
+           |LIMIT {limit}""".stripMargin
+      )
+        .on("limit" -> numberOfResult)
+        .as(FuelPrice.fuelPriceWithStationInfoParser.*)
+    }
+
+    rows
+      .groupBy { case (nodeId, tradingName, _) =>
+        (nodeId, tradingName)
+      }
+      .map {
+        case ((nodeId, tradingName), rowsPerStation) =>
+          FuelPriceForStation(
+            nodeId = nodeId,
+            publicPhoneNumber = None,
+            tradingName = tradingName,
+            fuelPrices = rowsPerStation.map(_._3)
+          )
+      }.toSeq
+      .sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(using Ordering[Instant].reverse)
+  }(using databaseExecutionContext)
 
   def getUserData(username: String): OptionT[Future, UserData] = OptionT(Future {
     db.withConnection { implicit conn =>
@@ -83,16 +153,17 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
 
     val results = db.withConnection { implicit conn =>
       SQL(
-        """SELECT fp.*, ft.name AS fuelType, HEX(nodeId_bin) as nodeId
+        """SELECT fp.*, fs.tradingName AS tradingName, ft.name AS fuelType, HEX(fp.nodeId_bin) as nodeId
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
+          |LEFT JOIN fuel_stations fs ON fp.nodeId_bin = fs.nodeId_bin
           |WHERE fp.nodeId_bin IN ({nodeIds})""".stripMargin
       )
         .on("nodeIds" -> binaryIds)
-        .as(FuelPrice.fuelPriceWithNodeIdParser.*)
+        .as(FuelPrice.fuelPriceWithStationInfoParser.*)
     }
     
-    results.groupMap(_._1)(_._2)
+    results.groupMap(_._1)(_._3)
   }(using databaseExecutionContext)
 
   def findAbsentFuelStations(nodeIds: Seq[String]): Future[Seq[String]] = Future {
@@ -110,7 +181,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
   }(using databaseExecutionContext)
 
   @SuppressWarnings(Array("org.wartremover.warts.ToString"))
-  def getLastUpdate: Future[Option[LocalDateTime]] = Future {
+  def getLastUpdateForLock: Future[Option[LocalDateTime]] = Future {
     db.withConnection { implicit conn =>
       SQL(
         """SELECT lastUpdate
