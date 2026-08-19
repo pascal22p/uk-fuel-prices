@@ -153,7 +153,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
 
     val results = db.withConnection { implicit conn =>
       SQL(
-        """SELECT fp.*, fs.tradingName AS tradingNme, ft.name AS fuelType, HEX(fp.nodeId_bin) as nodeId
+        """SELECT fp.*, fs.tradingName AS tradingName, ft.name AS fuelType, HEX(fp.nodeId_bin) as nodeId
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
           |LEFT JOIN fuel_stations fs ON fp.nodeId_bin = fs.nodeId_bin
