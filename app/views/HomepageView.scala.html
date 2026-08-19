@@ -11,7 +11,8 @@
 @(
         totalFuelStations: Int,
         totalFuelPrices: Int,
-        fuelPricesForStations: Seq[FuelPriceForStation]
+        fuelPricesForStations: Seq[FuelPriceForStation],
+        extraJs: List[String]
 )(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @dateFormatter = @{
@@ -28,35 +29,9 @@
     </a>
 }
 
-@main() {
+@main(extraJs = extraJs) {
 
     <p class="govuk-body-m"><a class="govuk-link" href="@routes.SearchByPostcodeController.showPostcodeForm()">Find fuel prices in your area by searching by postcode</a></p>
-
-    <div class="govuk-grid-row">
-
-        <div class="govuk-grid-column-one-half">
-            <div class="govuk-panel govuk-panel--confirmation">
-                <h2 class="govuk-panel__title">
-                @totalFuelStations
-                </h2>
-                <div class="govuk-panel__body">
-                    @messages("homepage.fuelStations")
-                </div>
-            </div>
-        </div>
-
-        <div class="govuk-grid-column-one-half">
-            <div class="govuk-panel govuk-panel--confirmation">
-                <h2 class="govuk-panel__title">
-                @totalFuelPrices
-                </h2>
-                <div class="govuk-panel__body">
-                    @messages("homepage.fuelPrices")
-                </div>
-            </div>
-        </div>
-
-    </div>
 
     <h2 class="govuk-heading-l">
         @messages("homepage.recentlyUpdatedPrices")
@@ -143,4 +118,31 @@
         )
         </div>
     }
+
+    <div class="govuk-grid-row">
+
+        <div class="govuk-grid-column-one-half">
+            <div class="govuk-panel govuk-panel--confirmation">
+                <h2 class="govuk-panel__title">
+                @totalFuelStations
+                </h2>
+                <div class="govuk-panel__body">
+                @messages("homepage.fuelStations")
+                </div>
+            </div>
+        </div>
+
+        <div class="govuk-grid-column-one-half">
+            <div class="govuk-panel govuk-panel--confirmation">
+                <h2 class="govuk-panel__title">
+                @totalFuelPrices
+                </h2>
+                <div class="govuk-panel__body">
+                @messages("homepage.fuelPrices")
+                </div>
+            </div>
+        </div>
+
+    </div>
+
 }

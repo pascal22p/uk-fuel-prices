@@ -33,7 +33,12 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def getLatestFuelPricesWithStation(numberOfResult: Int): Future[Seq[FuelPriceForStation]] = Future {
+  def getLatestFuelPricesWithStation(numberOfResult: Int, stationsFilter: Seq[String] = Seq.empty): Future[Seq[FuelPriceForStation]] = Future {
+    val inClause = if(stationsFilter.nonEmpty) {
+      s"WHERE fs.nodeId_bin IN (${stationsFilter.map(h => s"UNHEX('$h')").mkString(", ")})"
+    } else {
+      ""
+    }
     val rows = db.withConnection { implicit conn =>
       SQL(
         s"""SELECT
@@ -60,6 +65,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |        ON fp.fuelTypeId = ft.id
            |    LEFT JOIN fuel_stations fs
            |        ON fp.nodeId_bin = fs.nodeId_bin
+           |    $inClause
            |) latest
            |WHERE rowNumber = 1
            |ORDER BY priceLastUpdated DESC

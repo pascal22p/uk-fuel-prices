@@ -12,7 +12,11 @@
 )
 
 
-@(caption: Option[String] = None, extraHeaders: List[String] = List.empty)(contentBlock: Html)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
+@(
+        caption: Option[String] = None,
+        extraHeaders: List[String] = List.empty,
+        extraJs: List[String] = List.empty
+)(contentBlock: Html)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @timeoutDialog = {
 @hmrcTimeoutDialog(TimeoutDialog(
@@ -76,10 +80,14 @@
         <script type="module" src="@{assetConfig.hmrcFrontendJsUrl}"></script>
         <link rel="stylesheet" media="screen" href="/assets/stylesheets/main.css">
 
+        @for(jsFile <- extraJs) {
+            <script src="/assets/javascripts/@jsFile"></script>
+        }
+
         @if(authenticatedRequest.request.uri.contains(controllers.routes.SessionController.loginOnLoad("").path.takeWhile(_ != '?'))) {
             <link rel="canonical" href="@authenticatedRequest.request.host@controllers.routes.SessionController.loginOnLoad("").path.takeWhile(_ != '?')">
             <meta name="robots" content="noindex">
-            }
+        }
 
         @if(authenticatedRequest.localSession.sessionData.userData.isDefined){
             @timeoutDialog

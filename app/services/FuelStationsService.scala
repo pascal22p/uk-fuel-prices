@@ -1,12 +1,15 @@
 package services
 
-import cats.data.EitherT
+import cats.data.{EitherT, OptionT}
 import cats.implicits.*
 import connectors.FuelPriceConnector
-import models.FuelStation
+import models.{FuelPriceForStation, FuelStation, GeoLoc}
+import net.sf.geographiclib.Geodesic
 import play.api.Logging
 import play.api.http.Status.NOT_FOUND
+import queries.GetSqlQueries
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
+import utils.GeoBoundingBox
 
 import java.util.Locale
 import javax.inject.{Inject, Singleton}
@@ -15,6 +18,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class FuelStationsService @Inject()(
                                 fuelPriceConnector: FuelPriceConnector,
+                                getSqlQueries: GetSqlQueries
                                 )(implicit ec: ExecutionContext) extends Logging {
 
   final def findFuelStations(
@@ -40,6 +44,21 @@ class FuelStationsService @Inject()(
       case Left(error) if error.statusCode == NOT_FOUND => Right(None)
       case result => result
     }
+  }
+
+  def getLatestFuelPricesWithStation(numberOfResult: Int, geoloc: Option[GeoLoc]): Future[Seq[FuelPriceForStation]] = {
+    val radius = 10.0
+    (for {
+      coordinates <- OptionT.fromOption[Future](geoloc)
+      boundingBox <- OptionT.some(GeoBoundingBox.fromRadius(coordinates.latitude, coordinates.longitude, radius * 1.60934))
+      fuelStationsCandidates <- OptionT.liftF(getSqlQueries.getFuelStations(boundingBox))
+      fuelStations = fuelStationsCandidates.filter { station =>
+        Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, station.location.latitude, station.location.longitude).s12 <= radius * 1.60934 * 1000.0
+      }
+      lastUpdates <- OptionT.liftF(getSqlQueries.getLatestFuelPricesWithStation(numberOfResult, fuelStations.map(_.nodeId)))
+    } yield {
+      lastUpdates
+    }).getOrElseF(getSqlQueries.getLatestFuelPricesWithStation(numberOfResult, Seq.empty))
   }
   
 }
