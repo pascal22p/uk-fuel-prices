@@ -23,7 +23,7 @@ jobs:
     with:
       run_id: ${{ github.event.workflow_run.id }}
       model: "Qwen3.6-27B"
-      reasoning_effort: "high"
+      reasoning_effort: "medium"
     secrets:
       OVH_AI_ENDPOINTS_API_KEY: ${{ secrets.OVH_AI_ENDPOINTS_API_KEY }}
 
