@@ -35,10 +35,6 @@ class FuelStationsService @Inject()(
           case None =>
             findFuelStations(nodeId, batchNumber + 1)
         }
-    }.transform {
-      // not found response. End of the line, returning success.
-      case Left(error) if error.statusCode == NOT_FOUND => Right(None)
-      case result => result
     }
   }
   
