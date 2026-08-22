@@ -5,7 +5,6 @@ import cats.implicits.*
 import connectors.FuelPriceConnector
 import models.FuelStation
 import play.api.Logging
-import play.api.http.Status.NOT_FOUND
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
 import java.util.Locale
