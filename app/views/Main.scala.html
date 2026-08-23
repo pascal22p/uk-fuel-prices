@@ -45,7 +45,6 @@
 }
 
 @favouriteNodeId: Seq[ServiceNavigationItem] = @{
-    println(authenticatedRequest.localSession.sessionData.userData)
     authenticatedRequest.localSession.sessionData.userData.flatMap(data => Option(data.favouriteNodeId).filter(_.nonEmpty)) match {
         case None => Seq.empty
         case Some(nodeId) => Seq(ServiceNavigationItem(

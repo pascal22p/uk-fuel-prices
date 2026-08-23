@@ -60,5 +60,5 @@ class FuelStationsService @Inject()(
       lastUpdates
     }).getOrElseF(getSqlQueries.getLatestFuelPricesWithStation(numberOfResult, Seq.empty))
   }
-  
+
 }
