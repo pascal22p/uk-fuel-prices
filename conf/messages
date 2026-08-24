@@ -26,4 +26,5 @@ homepage.station = Station
 homepage.fuel = Fuel
 homepage.prices = Prices
 homepage.updated = Updated
+homepage.findPricesByPostcode = Find fuel prices in your area by searching by postcode
 

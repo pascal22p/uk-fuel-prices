@@ -2,6 +2,7 @@ package services
 
 import cats.data.{EitherT, OptionT}
 import cats.implicits.*
+import config.AppConfig
 import connectors.FuelPriceConnector
 import models.{FuelPriceForStation, FuelStation, GeoLoc}
 import net.sf.geographiclib.Geodesic
@@ -18,7 +19,8 @@ import scala.concurrent.{ExecutionContext, Future}
 @Singleton
 class FuelStationsService @Inject()(
                                 fuelPriceConnector: FuelPriceConnector,
-                                getSqlQueries: GetSqlQueries
+                                getSqlQueries: GetSqlQueries,
+                                appConfig: AppConfig
                                 )(implicit ec: ExecutionContext) extends Logging {
 
   final def findFuelStations(
@@ -47,7 +49,7 @@ class FuelStationsService @Inject()(
   }
 
   def getLatestFuelPricesWithStation(numberOfResult: Int, geoloc: Option[GeoLoc]): Future[Seq[FuelPriceForStation]] = {
-    val radius = 10.0
+    val radius = appConfig.localStationsRadius
     (for {
       coordinates <- OptionT.fromOption[Future](geoloc)
       boundingBox <- OptionT.some(GeoBoundingBox.fromRadius(coordinates.latitude, coordinates.longitude, radius * 1.60934))
@@ -55,7 +57,12 @@ class FuelStationsService @Inject()(
       fuelStations = fuelStationsCandidates.filter { station =>
         Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, station.location.latitude, station.location.longitude).s12 <= radius * 1.60934 * 1000.0
       }
-      lastUpdates <- OptionT.liftF(getSqlQueries.getLatestFuelPricesWithStation(numberOfResult, fuelStations.map(_.nodeId)))
+      lastUpdates <- 
+        if(fuelStations.nonEmpty) {
+          OptionT.liftF(getSqlQueries.getLatestFuelPricesWithStation(numberOfResult, fuelStations.map(_.nodeId)))
+        } else {
+          OptionT.some[Future](Seq.empty)
+        }
     } yield {
       lastUpdates
     }).getOrElseF(getSqlQueries.getLatestFuelPricesWithStation(numberOfResult, Seq.empty))

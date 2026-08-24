@@ -29,7 +29,7 @@ class SearchByPostcodeService @Inject()(
       boundingBox <- EitherT.rightT(GeoBoundingBox.fromRadius(coordinates.latitude, coordinates.longitude, radius * 1.60934))
       fuelStationsCandidates <- EitherT.liftF(getSqlQueries.getFuelStations(boundingBox))
       fuelStations = fuelStationsCandidates.filter { station =>
-        Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, station.location.latitude, station.location.longitude).s12 <= radius * 1.60934 * 1000.0
+        Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, station.location.latitude, station.location.longitude).s12 <= radius * 1.60934 * 1000.0
       }
       fuelStationWithPrices <-
         EitherT.liftF(

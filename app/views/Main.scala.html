@@ -14,8 +14,7 @@
 
 @(
         caption: Option[String] = None,
-        extraHeaders: List[String] = List.empty,
-        extraJs: List[String] = List.empty
+        extraHeaders: List[String] = List.empty
 )(contentBlock: Html)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @timeoutDialog = {
@@ -74,14 +73,9 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@@0,100..900;1,100..900&display=swap" rel="stylesheet">
 
-        @*<link rel="icon" type="image/png" href="@routes.AssetsController.get("images/favicon.png")">*@
         <link rel="stylesheet" media="screen" href="@assetConfig.hmrcFrontendCssUrl">
         <script type="module" src="@{assetConfig.hmrcFrontendJsUrl}"></script>
         <link rel="stylesheet" media="screen" href="/assets/stylesheets/main.css">
-
-        @for(jsFile <- extraJs) {
-            <script src="/assets/javascripts/@jsFile"></script>
-        }
 
         @if(authenticatedRequest.request.uri.contains(controllers.routes.SessionController.loginOnLoad("").path.takeWhile(_ != '?'))) {
             <link rel="canonical" href="@authenticatedRequest.request.host@controllers.routes.SessionController.loginOnLoad("").path.takeWhile(_ != '?')">

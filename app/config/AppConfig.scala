@@ -18,6 +18,7 @@ class AppConfig @Inject() (configuration: Configuration) {
   val commitHash: String = sys.props.getOrElse("git.commit.hash", "unknown")
 
   val maxCountForLastUpdatedPrices: Int = configuration.get[Int]("constants.maxLastUpdated")
+  val localStationsRadius: Int = configuration.get[Int]("constants.maxLocalStationsRadius")
 
   val clientId: String     = configuration.get[String]("microservice.services.fuel-finder.client-id")
   val clientSecret: String = configuration.get[String]("microservice.services.fuel-finder.client-secret")

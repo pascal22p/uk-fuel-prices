@@ -29,9 +29,9 @@
     </a>
 }
 
-@main(extraJs = extraJs) {
+@main(extraHeaders = extraJs) {
 
-    <p class="govuk-body-m"><a class="govuk-link" href="@routes.SearchByPostcodeController.showPostcodeForm()">Find fuel prices in your area by searching by postcode</a></p>
+    <p class="govuk-body-m"><a class="govuk-link" href="@routes.SearchByPostcodeController.showPostcodeForm()">@messages("homepage.findPricesByPostcode")</a></p>
 
     <h2 class="govuk-heading-l">
         @messages("homepage.recentlyUpdatedPrices")

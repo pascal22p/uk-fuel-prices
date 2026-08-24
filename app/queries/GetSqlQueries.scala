@@ -5,7 +5,7 @@ import anorm.SqlParser.scalar
 import cats.data.OptionT
 import models.*
 import play.api.db.Database
-import utils.BoundingBox
+import utils.GeoBoundingBox
 
 import java.time.{Instant, LocalDateTime}
 import javax.inject.{Inject, Singleton}
@@ -34,11 +34,18 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
   }(using databaseExecutionContext)
 
   def getLatestFuelPricesWithStation(numberOfResult: Int, stationsFilter: Seq[String] = Seq.empty): Future[Seq[FuelPriceForStation]] = Future {
-    val inClause = if(stationsFilter.nonEmpty) {
-      s"WHERE fs.nodeId_bin IN (${stationsFilter.map(h => s"UNHEX('$h')").mkString(", ")})"
+    val stationParams: Seq[NamedParameter] =
+      stationsFilter.zipWithIndex.map { case (h, i) => NamedParameter(s"station$i", h) }
+
+    val inClause = if (stationsFilter.nonEmpty) {
+      val placeholders = stationsFilter.indices.map(i => s"UNHEX({station$i})").mkString(", ")
+      s"WHERE fs.nodeId_bin IN ($placeholders)"
     } else {
       ""
     }
+
+    val allParams: Seq[NamedParameter] = NamedParameter("limit", numberOfResult) +: stationParams
+
     val rows = db.withConnection { implicit conn =>
       SQL(
         s"""SELECT
@@ -71,7 +78,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |ORDER BY priceLastUpdated DESC
            |LIMIT {limit}""".stripMargin
       )
-        .on("limit" -> numberOfResult)
+        .on(allParams*)
         .as(FuelPrice.fuelPriceWithStationInfoParser.*)
     }
 
@@ -113,7 +120,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def getFuelStations(boundingBox: BoundingBox): Future[Seq[FuelStation]] = Future {
+  def getFuelStations(geoBoundingBox: GeoBoundingBox): Future[Seq[FuelStation]] = Future {
     db.withConnection { implicit conn =>
       SQL(
         """SELECT *, HEX(nodeId_bin) as nodeId
@@ -121,10 +128,10 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
           |WHERE latitude > {latitude_min} AND latitude < {latitude_max} AND
           |  longitude > {longitude_min} AND longitude < {longitude_max}""".stripMargin)
         .on(
-          "latitude_min" -> boundingBox.minLat, 
-          "latitude_max" -> boundingBox.maxLat, 
-          "longitude_min" -> boundingBox.minLon, 
-          "longitude_max" -> boundingBox.maxLon
+          "latitude_min" -> geoBoundingBox.minLat, 
+          "latitude_max" -> geoBoundingBox.maxLat, 
+          "longitude_min" -> geoBoundingBox.minLon, 
+          "longitude_max" -> geoBoundingBox.maxLon
         )
         .as(FuelStation.fuelStationParser.*)
     }
