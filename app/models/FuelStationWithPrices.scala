@@ -16,8 +16,8 @@ final case class FuelStationWithPrices(
                               fuelPrices: Seq[FuelPrice],
                               distance: Double
                             ) {
-  def distanceFromCentre(centre: (Double, Double)): Double = {
-    Geodesic.WGS84.Inverse(centre._1, centre._2, location.latitude, location.longitude).s12
+  def distanceFromCentre(centre: GeoLoc): Double = {
+    Geodesic.WGS84.Inverse(centre.latitude, centre.longitude, location.latitude, location.longitude).s12
   }
 }
 
