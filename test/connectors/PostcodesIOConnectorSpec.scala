@@ -3,6 +3,7 @@ package connectors
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.{notFound, ok, urlEqualTo}
 import config.AppConfig
+import models.GeoLoc
 import org.mockito.Mockito.when
 import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -47,7 +48,7 @@ class PostcodesIOConnectorSpec extends BaseSpec with WireMockHelper {
 
       val result = sut.getCoordinates("AA").value.futureValue
 
-      result mustBe Right((51.50101, -0.141563))
+      result mustBe Right(GeoLoc(51.50101, -0.141563))
     }
 
     "return an UpstreamErrorResponse" in {

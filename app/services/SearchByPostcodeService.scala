@@ -26,7 +26,7 @@ class SearchByPostcodeService @Inject()(
   def getViewModel(postcode: String, fuelType: FuelType, radius: Double)(implicit hc: HeaderCarrier): EitherT[Future, Throwable, SearchByPostcodeViewModel] = {
     for {
       coordinates <- postcodesIOConnector.getCoordinates(postcode).leftMap(identity[Throwable])
-      boundingBox <- EitherT.rightT(GeoBoundingBox.fromRadius(coordinates._1, coordinates._2, radius * 1.60934))
+      boundingBox <- EitherT.rightT(GeoBoundingBox.fromRadius(coordinates.latitude, coordinates.longitude, radius * 1.60934))
       fuelStationsCandidates <- EitherT.liftF(getSqlQueries.getFuelStations(boundingBox))
       fuelStations = fuelStationsCandidates.filter { station =>
         Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, station.location.latitude, station.location.longitude).s12 <= radius * 1.60934 * 1000.0
