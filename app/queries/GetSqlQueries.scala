@@ -51,6 +51,10 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
         s"""SELECT
            |    nodeId,
            |    tradingName,
+           |    addressLine1,
+           |    addressLine2,
+           |    city,
+           |    postcode,
            |    fuelType,
            |    priceChangeEffectiveTimestamp,
            |    priceLastUpdated,
@@ -59,6 +63,10 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |    SELECT
            |        HEX(fp.nodeId_bin) AS nodeId,
            |        fs.tradingName AS tradingName,
+           |        fs.addressLine1 AS addressLine1,
+           |        fs.addressLine2 AS addressLine2,
+           |        fs.city AS city,
+           |        fs.postcode AS postcode,
            |        ft.name AS fuelType,
            |        fp.priceChangeEffectiveTimestamp AS priceChangeEffectiveTimestamp,
            |        fp.priceLastUpdated AS priceLastUpdated,
@@ -83,16 +91,17 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
 
     rows
-      .groupBy { case (nodeId, tradingName, _) =>
-        (nodeId, tradingName)
+      .groupBy { case (nodeId, tradingName, addressLine1, addressLine2, city, postcode, _) =>
+        (nodeId, tradingName, addressLine1, addressLine2, city, postcode)
       }
       .map {
-        case ((nodeId, tradingName), rowsPerStation) =>
+        case ((nodeId, tradingName, addressLine1, addressLine2, city, postcode), rowsPerStation) =>
           FuelPriceForStation(
             nodeId = nodeId,
             publicPhoneNumber = None,
             tradingName = tradingName,
-            fuelPrices = rowsPerStation.map(_._3)
+            address = Seq(addressLine1, addressLine2, city, postcode).flatten.filter(_.nonEmpty),
+            fuelPrices = rowsPerStation.map(_._7)
           )
       }.toSeq
       .sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(using Ordering[Instant].reverse)
@@ -176,7 +185,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
         .as(FuelPrice.fuelPriceWithStationInfoParser.*)
     }
     
-    results.groupMap(_._1)(_._3)
+    results.groupMap(_._1)(_._7)
   }(using databaseExecutionContext)
 
   def findAbsentFuelStations(nodeIds: Seq[String]): Future[Seq[String]] = Future {

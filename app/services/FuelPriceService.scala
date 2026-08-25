@@ -86,7 +86,7 @@ class FuelPriceService @Inject()(
     getSqlQueries.getFuelStations(postcode).flatMap { stations =>
       stations.traverse { station =>
         getSqlQueries.findPricesForStation(station.nodeId).map { fuelPrices =>
-          FuelPriceForStation(station.nodeId, None, station.tradingName, fuelPrices)
+          FuelPriceForStation(station.nodeId, None, station.tradingName, Seq.empty, fuelPrices)
         }
       }
     }

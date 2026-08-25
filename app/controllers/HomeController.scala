@@ -8,7 +8,6 @@ import javax.inject.*
 import play.api.*
 import play.api.i18n.I18nSupport
 import play.api.mvc.*
-import play.twirl.api.Html
 import queries.GetSqlQueries
 import services.FuelStationsService
 import views.html.{HomepageView, StationView}
@@ -49,8 +48,7 @@ class HomeController @Inject()(
      Ok(homepageView(
        totalFuelStations,
        totalFuelPrices,
-       lastUpdates,
-       geoloc.fold(Seq(Html("""<script src="/assets/javascripts/geoloc.js"></script>""")))(_ => Seq.empty)
+       lastUpdates
      ))
     }
   }

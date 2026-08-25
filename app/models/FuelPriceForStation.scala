@@ -7,6 +7,7 @@ final case class FuelPriceForStation(
                                     nodeId: String,
                                     publicPhoneNumber: Option[String],
                                     tradingName: String,
+                                    address: Seq[String],
                                     fuelPrices: Seq[FuelPrice]
                                     )
 
@@ -16,5 +17,13 @@ object FuelPriceForStation {
       (JsPath \ "public_phone_number").readNullable[String] and
       (JsPath \ "trading_name").read[String] and
       (JsPath \ "fuel_prices").read[Seq[FuelPrice]]
-    )(FuelPriceForStation.apply)
+    ) { (nodeId, publicPhoneNumber, tradingName, fuelPrices) =>
+    FuelPriceForStation(
+      nodeId = nodeId,
+      publicPhoneNumber = publicPhoneNumber,
+      tradingName = tradingName,
+      fuelPrices = fuelPrices,
+      address = Seq.empty
+    )
+  }
 }
