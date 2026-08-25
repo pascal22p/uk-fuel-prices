@@ -32,6 +32,7 @@
     <script>
             const lat = @station.location.latitude;
             const lng = @station.location.longitude;
+            const tradingName = @Html(play.api.libs.json.Json.toJson(station.tradingName).toString.replace("</", "<\\/"));
 
             // Create map centered at coordinates
             const map = L.map('map').setView([lat, lng], 13);
@@ -44,7 +45,7 @@
             // Add marker (pin)
             L.marker([lat, lng])
                     .addTo(map)
-                    .bindPopup("@station.tradingName")
+                    .bindPopup(tradingName)
                     .openPopup();
     </script>
     </div>

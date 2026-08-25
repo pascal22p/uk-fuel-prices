@@ -115,5 +115,32 @@ class FuelStationsServiceSpec extends BaseSpec {
       verify(mockGetSqlQueries, times(0)).getFuelStations(any[GeoBoundingBox])
       verify(mockGetSqlQueries).getLatestFuelPricesWithStation(5, Seq.empty)
     }
+
+    "build the GeoBoundingBox passed to getFuelStations using the correct miles-to-kilometres radius conversion" in {
+      when(mockAppConfig.localStationsRadius).thenReturn(radiusMiles)
+      when(mockGetSqlQueries.getFuelStations(any[GeoBoundingBox])).thenReturn(
+        Future.successful(Seq(nearStation))
+      )
+      when(mockGetSqlQueries.getLatestFuelPricesWithStation(any[Int], any[Seq[String]])).thenReturn(
+        Future.successful(Seq.empty)
+      )
+
+      sut.getLatestFuelPricesWithStation(5, Some(geoLoc)).futureValue
+
+      val boundingBoxCaptor = org.mockito.ArgumentCaptor.forClass(classOf[GeoBoundingBox])
+      verify(mockGetSqlQueries).getFuelStations(boundingBoxCaptor.capture())
+      val actualBoundingBox = boundingBoxCaptor.getValue
+
+      val expectedBoundingBox = GeoBoundingBox.fromRadius(
+        geoLoc.latitude,
+        geoLoc.longitude,
+        radiusMiles * 1.60934
+      )
+
+      actualBoundingBox.minLat mustBe expectedBoundingBox.minLat
+      actualBoundingBox.maxLat mustBe expectedBoundingBox.maxLat
+      actualBoundingBox.minLon mustBe expectedBoundingBox.minLon
+      actualBoundingBox.maxLon mustBe expectedBoundingBox.maxLon
+    }
   }
 }
