@@ -32,7 +32,7 @@
     <script>
             const lat = @station.location.latitude;
             const lng = @station.location.longitude;
-            const tradingName = @Html(play.api.libs.json.Json.toJson(station.tradingName).toString.replace("</", "<\\/"));
+            const tradingName = @Html(views.utils.Escaping.jsStringLiteral(station.tradingName));
 
             // Create map centered at coordinates
             const map = L.map('map').setView([lat, lng], 13);
