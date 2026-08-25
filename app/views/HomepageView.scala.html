@@ -2,6 +2,7 @@
 @import views.html.Main
 @import java.time.format.DateTimeFormatter
 @import java.time.ZoneId
+@import play.twirl.api.HtmlFormat
 
 @this(
         main: Main,
@@ -107,7 +108,7 @@
                                 ),
                                 value = Value(
                                     content = HtmlContent(
-                                        station.address.mkString("<br>")
+                                        station.address.map(HtmlFormat.escape).mkString("<br>")
                                     )
                                 )
                             )

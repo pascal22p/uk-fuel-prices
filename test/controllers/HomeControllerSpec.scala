@@ -140,5 +140,33 @@ class HomeControllerSpec extends BaseSpec {
       verify(mockFuelStationsService).getLatestFuelPricesWithStation(any(), geoLocCaptor.capture())
       geoLocCaptor.getValue mustBe None
     }
+
+    "treat a loc parameter that matches the pattern but fails numeric conversion as absent, include the script tag, and pass None to FuelStationsService" in {
+      when(mockGetSqlQueries.getTotalFuelPrices).thenReturn(
+        Future.successful(1)
+      )
+      when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
+        Future.successful(2)
+      )
+      when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
+      when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
+        Future.successful(Seq(FuelPriceForStation(
+          "1",
+          None,
+          "trading Name",
+          Seq.empty,
+          Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        )))
+      )
+
+      val result = sut.index().apply(FakeRequest(GET, "/?loc=51.5,abc"))
+
+      status(result) mustBe OK
+      contentAsString(result) must include("""<script src="/assets/javascripts/geoloc.js" defer></script>""")
+
+      val geoLocCaptor = org.mockito.ArgumentCaptor.forClass(classOf[Option[GeoLoc]])
+      verify(mockFuelStationsService).getLatestFuelPricesWithStation(any(), geoLocCaptor.capture())
+      geoLocCaptor.getValue mustBe None
+    }
   }
 }

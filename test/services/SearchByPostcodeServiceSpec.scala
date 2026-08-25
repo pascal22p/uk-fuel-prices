@@ -87,6 +87,35 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
       verify(mockGetSqlQueries, times(0)).findPricesForStations(any[Seq[String]])
     }
 
+    "return a view model containing the station with an empty fuelPrices list when the station has prices but none match the requested fuel type" in {
+      val wrongFuelTypePrice = FuelPrice(155.9, FuelType.B7_STANDARD, now, now)
+
+      when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
+        EitherT.rightT[Future, UpstreamErrorResponse](geoLoc)
+      )
+      when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
+        Future.successful(Seq(nearStation))
+      )
+      when(mockGetSqlQueries.findPricesForStations(any[Seq[String]])).thenReturn(
+        Future.successful(Map("nearNodeId" -> Seq(wrongFuelTypePrice)))
+      )
+
+      val result = sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
+
+      result.isRight mustBe true
+      val viewModel = result.toOption.get
+
+      viewModel.centrePostcode mustBe postcode
+      viewModel.centreLocation mustBe geoLoc
+      viewModel.radius mustBe radiusMiles
+      viewModel.fuelType mustBe FuelType.E10
+
+      viewModel.fuelStationWithPrices.map(_.nodeId) mustBe List("nearNodeId")
+      viewModel.fuelStationWithPrices.head.fuelPrices mustBe empty
+
+      verify(mockGetSqlQueries).findPricesForStations(Seq("nearNodeId"))
+    }
+
     "return a view model with an empty fuelStationWithPrices list when no prices are found for the fuel type, while preserving centre information" in {
       when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](geoLoc)
