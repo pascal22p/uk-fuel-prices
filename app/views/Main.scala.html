@@ -14,7 +14,7 @@
 
 @(
         caption: Option[String] = None,
-        extraHeaders: List[String] = List.empty
+        extraHeaders: Seq[Html] = Seq.empty
 )(contentBlock: Html)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @timeoutDialog = {
@@ -87,7 +87,7 @@
         }
 
         @for(header <- extraHeaders) {
-            @Html(header)
+            @header
         }
 
     </head>

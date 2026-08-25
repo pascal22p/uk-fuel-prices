@@ -12,7 +12,7 @@
         totalFuelStations: Int,
         totalFuelPrices: Int,
         fuelPricesForStations: Seq[FuelPriceForStation],
-        extraJs: List[String]
+        extraJs: Seq[Html]
 )(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @dateFormatter = @{

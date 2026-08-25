@@ -89,6 +89,19 @@ class FuelStationsServiceSpec extends BaseSpec {
       verify(mockGetSqlQueries, times(0)).getLatestFuelPricesWithStation(any[Int], any[Seq[String]])
     }
 
+    "return an empty result without querying prices when the bounding box query itself returns no stations" in {
+      when(mockAppConfig.localStationsRadius).thenReturn(radiusMiles)
+      when(mockGetSqlQueries.getFuelStations(any[GeoBoundingBox])).thenReturn(
+        Future.successful(Seq.empty)
+      )
+
+      val result = sut.getLatestFuelPricesWithStation(5, Some(geoLoc)).futureValue
+
+      result mustBe Seq.empty
+      verify(mockGetSqlQueries).getFuelStations(any[GeoBoundingBox])
+      verify(mockGetSqlQueries, times(0)).getLatestFuelPricesWithStation(any[Int], any[Seq[String]])
+    }
+
     "fall back to an unfiltered query when geoloc is None" in {
       when(mockGetSqlQueries.getLatestFuelPricesWithStation(any[Int], any[Seq[String]])).thenReturn(
         Future.successful(Seq(
