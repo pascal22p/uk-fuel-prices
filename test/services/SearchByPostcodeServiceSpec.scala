@@ -10,8 +10,7 @@ import testUtils.BaseSpec
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 
 import java.time.Instant
-import scala.concurrent.{Await, Future}
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.Future
 
 class SearchByPostcodeServiceSpec extends BaseSpec {
 
@@ -27,22 +26,21 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
     reset(mockPostcodesIOConnector, mockGetSqlQueries)
   }
 
+  val postcode = "SW1A 1AA"
+  val geoLoc = GeoLoc(51.5074, -0.1278) // London
+  val radiusMiles = 10.0
+  val farStation = FuelStation(
+    "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
+    FuelStationLocation(None, None, "city", None, None, "postcode", -33.8688, 151.2093), // Sydney
+    List.empty
+  )
+  val nearStation = FuelStation(
+    "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
+    FuelStationLocation(None, None, "city", None, None, "postcode", 51.51, -0.13), // ~1km away
+    List.empty
+  )
+
   "getViewModel" must {
-    val postcode = "SW1A 1AA"
-    val geoLoc = GeoLoc(51.5074, -0.1278) // London
-    val radiusMiles = 10.0
-
-    val nearStation = FuelStation(
-      "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", 51.51, -0.13), // ~1km away
-      List.empty
-    )
-
-    val farStation = FuelStation(
-      "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", -33.8688, 151.2093), // Sydney
-      List.empty
-    )
 
     val now = Instant.now
     val nearStationPrice = FuelPrice(140.0, FuelType.E10, now, now)
@@ -58,7 +56,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
         Future.successful(Map("nearNodeId" -> Seq(nearStationPrice)))
       )
 
-      val result = Await.result(sut.getViewModel(postcode, FuelType.E10, radiusMiles).value, 1.minute)
+      val result = sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
 
       result.isRight mustBe true
       val viewModel = result.toOption.get
@@ -87,6 +85,87 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
       result mustBe Left(error)
       verify(mockGetSqlQueries, times(0)).getFuelStations(any[utils.GeoBoundingBox])
       verify(mockGetSqlQueries, times(0)).findPricesForStations(any[Seq[String]])
+    }
+
+    "return a view model with an empty fuelStationWithPrices list when no prices are found for the fuel type, while preserving centre information" in {
+      when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
+        EitherT.rightT[Future, UpstreamErrorResponse](geoLoc)
+      )
+      when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
+        Future.successful(Seq(nearStation))
+      )
+      when(mockGetSqlQueries.findPricesForStations(any[Seq[String]])).thenReturn(
+        Future.successful(Map.empty[String, Seq[FuelPrice]])
+      )
+
+      val result = sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
+
+      result.isRight mustBe true
+      val viewModel = result.toOption.get
+
+      viewModel.centrePostcode mustBe postcode
+      viewModel.centreLocation mustBe geoLoc
+      viewModel.radius mustBe radiusMiles
+      viewModel.fuelType mustBe FuelType.E10
+
+      viewModel.fuelStationWithPrices mustBe empty
+
+      verify(mockGetSqlQueries).findPricesForStations(Seq("nearNodeId"))
+    }
+
+    "return a view model with an empty fuelStationWithPrices list and call findPricesForStations with an empty Seq when all stations are filtered out by radius" in {
+      when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
+        EitherT.rightT[Future, UpstreamErrorResponse](geoLoc)
+      )
+      when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
+        Future.successful(Seq(farStation))
+      )
+      when(mockGetSqlQueries.findPricesForStations(Seq.empty)).thenReturn(
+        Future.successful(Map.empty[String, Seq[FuelPrice]])
+      )
+
+      val result = sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
+
+      result.isRight mustBe true
+      val viewModel = result.toOption.get
+
+      viewModel.centrePostcode mustBe postcode
+      viewModel.centreLocation mustBe geoLoc
+      viewModel.radius mustBe radiusMiles
+      viewModel.fuelType mustBe FuelType.E10
+
+      viewModel.fuelStationWithPrices mustBe empty
+
+      verify(mockGetSqlQueries).findPricesForStations(Seq.empty)
+    }
+
+    "build the GeoBoundingBox passed to getFuelStations using the correct radius conversion and coordinates" in {
+      when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
+        EitherT.rightT[Future, UpstreamErrorResponse](geoLoc)
+      )
+      when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
+        Future.successful(Seq.empty)
+      )
+      when(mockGetSqlQueries.findPricesForStations(Seq.empty)).thenReturn(
+        Future.successful(Map.empty[String, Seq[FuelPrice]])
+      )
+
+      sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
+
+      val boundingBoxCaptor = org.mockito.ArgumentCaptor.forClass(classOf[utils.GeoBoundingBox])
+      verify(mockGetSqlQueries).getFuelStations(boundingBoxCaptor.capture())
+      val actualBoundingBox = boundingBoxCaptor.getValue
+
+      val expectedBoundingBox = utils.GeoBoundingBox.fromRadius(
+        geoLoc.latitude,
+        geoLoc.longitude,
+        radiusMiles * 1.60934
+      )
+
+      actualBoundingBox.minLat mustBe expectedBoundingBox.minLat
+      actualBoundingBox.maxLat mustBe expectedBoundingBox.maxLat
+      actualBoundingBox.minLon mustBe expectedBoundingBox.minLon
+      actualBoundingBox.maxLon mustBe expectedBoundingBox.maxLon
     }
   }
 }
