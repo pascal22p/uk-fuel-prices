@@ -47,6 +47,7 @@ class HomeControllerSpec extends BaseSpec {
           "1",
           None,
           "trading Name",
+          Seq.empty,
           Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
@@ -69,6 +70,7 @@ class HomeControllerSpec extends BaseSpec {
           "1",
           None,
           "trading Name",
+          Seq.empty,
           Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
@@ -76,7 +78,7 @@ class HomeControllerSpec extends BaseSpec {
       val result = sut.index().apply(FakeRequest(GET, "/"))
 
       status(result) mustBe OK
-      contentAsString(result) must include("""<script src="/assets/javascripts/geoloc.js"></script>""")
+      contentAsString(result) must include("""<script src="/assets/javascripts/geoloc.js" defer></script>""")
 
       val geoLocCaptor = org.mockito.ArgumentCaptor.forClass(classOf[Option[GeoLoc]])
       verify(mockFuelStationsService).getLatestFuelPricesWithStation(any(), geoLocCaptor.capture())
@@ -96,6 +98,7 @@ class HomeControllerSpec extends BaseSpec {
           "1",
           None,
           "trading Name",
+          Seq.empty,
           Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
@@ -123,6 +126,7 @@ class HomeControllerSpec extends BaseSpec {
           "1",
           None,
           "trading Name",
+          Seq.empty,
           Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
@@ -130,7 +134,7 @@ class HomeControllerSpec extends BaseSpec {
       val result = sut.index().apply(FakeRequest(GET, "/?loc=notanumber"))
 
       status(result) mustBe OK
-      contentAsString(result) must include("""<script src="/assets/javascripts/geoloc.js"></script>""")
+      contentAsString(result) must include("""<script src="/assets/javascripts/geoloc.js" defer></script>""")
 
       val geoLocCaptor = org.mockito.ArgumentCaptor.forClass(classOf[Option[GeoLoc]])
       verify(mockFuelStationsService).getLatestFuelPricesWithStation(any(), geoLocCaptor.capture())
