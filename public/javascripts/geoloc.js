@@ -1,19 +1,24 @@
 document.addEventListener('DOMContentLoaded', function () {
     console.log('[geoloc] DOM loaded');
 
-    const locationLink = document.getElementById('use-my-location');
+    const locationLinkA = document.getElementById('use-my-location-a');
+    const locationLinkB = document.getElementById('use-my-location-b');
 
-    console.log('[geoloc] Location link:', locationLink);
+    console.log('[geoloc] Location link A:', locationLinkA);
+    console.log('[geoloc] Location link B:', locationLinkB);
 
-    if (!locationLink) {
-        console.warn('[geoloc] #use-my-location was not found');
+    if (!locationLinkA) {
+        console.warn('[geoloc] #use-my-location-a was not found');
+        return;
+    }
+
+    if (!locationLinkB) {
+        console.warn('[geoloc] #use-my-location-b was not found');
         return;
     }
 
     if (!navigator.geolocation) {
         console.warn('[geoloc] Geolocation is not supported');
-        return;
-    }
 
     const params = new URLSearchParams(window.location.search);
 
@@ -21,7 +26,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (params.has('loc')) {
         console.log('[geoloc] loc already exists:', params.get('loc'));
-        locationLink.remove();
+        locationLinkA.remove();
+        locationLinkB.remove();
         return;
     }
 
@@ -68,7 +74,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 '[geoloc] Permission granted - hiding link and getting location'
             );
 
-            locationLink.hidden = true;
+            locationLinkA.hidden = true;
+            locationLinkB.hidden = true;
             useLocation();
 
         } else {
@@ -78,7 +85,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 '- showing link'
             );
 
-            locationLink.hidden = false;
+            locationLinkA.hidden = false;
+            locationLinkB.hidden = false;
         }
     }
 
@@ -110,7 +118,8 @@ document.addEventListener('DOMContentLoaded', function () {
                     error
                 );
 
-                locationLink.hidden = false;
+                locationLinkA.hidden = false;
+                locationLinkB.hidden = false;
             });
 
     } else {
@@ -118,14 +127,19 @@ document.addEventListener('DOMContentLoaded', function () {
             '[geoloc] Permissions API unavailable'
         );
 
-        locationLink.hidden = false;
+        locationLinkA.hidden = false;
+        locationLinkB.hidden = false;
     }
 
-    locationLink.addEventListener('click', function (event) {
+    locationLinkA.addEventListener('click', function (event) {
         console.log('[geoloc] Location link clicked');
-
         event.preventDefault();
+        useLocation();
+    });
 
+    locationLinkB.addEventListener('click', function (event) {
+        console.log('[geoloc] Location link clicked');
+        event.preventDefault();
         useLocation();
     });
 
