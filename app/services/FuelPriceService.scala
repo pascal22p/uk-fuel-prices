@@ -4,7 +4,7 @@ import cats.data.EitherT
 import cats.implicits.*
 import cats.syntax.all.*
 import connectors.FuelPriceConnector
-import models.FuelPriceForStation
+import models.{FuelPriceForStation, FuelStationWithPrices}
 import play.api.Logging
 import play.api.http.Status.NOT_FOUND
 import queries.{DeleteSqlQueries, GetSqlQueries, InsertSqlQueries}
@@ -82,13 +82,14 @@ class FuelPriceService @Inject()(
     }
   }
 
-  def getFuelPriceFromPostcode(postcode: String): Future[Seq[FuelPriceForStation]] = {
+  def getFuelPriceFromPostcode(postcode: String): Future[Seq[FuelStationWithPrices]] = {
     getSqlQueries.getFuelStations(postcode).flatMap { stations =>
       stations.traverse { station =>
-        getSqlQueries.findPricesForStation(station.nodeId).map { fuelPrices =>
-          FuelPriceForStation(station.nodeId, None, station.tradingName, Seq.empty, fuelPrices)
+        getSqlQueries.findPricesForStation(station.nodeId).map { stations =>
+          val prices = stations.flatMap(_.fuelPrices)
+          stations.headOption.map(_.copy(fuelPrices = prices))
         }
-      }
+      }.map(_.flatten)
     }
   }
 

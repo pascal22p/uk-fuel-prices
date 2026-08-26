@@ -33,7 +33,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def getLatestFuelPricesWithStation(numberOfResult: Int, stationsFilter: Seq[String] = Seq.empty): Future[Seq[FuelPriceForStation]] = Future {
+  def getLatestFuelPricesWithStation(numberOfResult: Int, stationsFilter: Seq[String] = Seq.empty): Future[Seq[FuelStationWithPrices]] = Future {
     val stationParams: Seq[NamedParameter] =
       stationsFilter.zipWithIndex.map { case (h, i) => NamedParameter(s"station$i", h) }
 
@@ -87,24 +87,13 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |LIMIT {limit}""".stripMargin
       )
         .on(allParams*)
-        .as(FuelPrice.fuelPriceWithStationInfoParser.*)
+        .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
     }
 
-    rows
-      .groupBy { case (nodeId, tradingName, addressLine1, addressLine2, city, postcode, _) =>
-        (nodeId, tradingName, addressLine1, addressLine2, city, postcode)
-      }
-      .map {
-        case ((nodeId, tradingName, addressLine1, addressLine2, city, postcode), rowsPerStation) =>
-          FuelPriceForStation(
-            nodeId = nodeId,
-            publicPhoneNumber = None,
-            tradingName = tradingName,
-            address = Seq(addressLine1, addressLine2, city, postcode).flatten.filter(_.nonEmpty),
-            fuelPrices = rowsPerStation.map(_._7)
-          )
-      }.toSeq
-      .sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(using Ordering[Instant].reverse)
+    rows.groupBy(_.nodeId).flatMap { case (_, stationRows) =>
+      val prices = stationRows.flatMap(_.fuelPrices)
+      stationRows.headOption.map(_.copy(fuelPrices = prices))
+    }.toSeq.sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(using Ordering[Instant].reverse)
   }(using databaseExecutionContext)
 
   def getUserData(username: String): OptionT[Future, UserData] = OptionT(Future {
@@ -157,16 +146,18 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def findPricesForStation(nodeId: String): Future[Seq[FuelPrice]] = Future {
+  def findPricesForStation(nodeId: String): Future[Seq[FuelStationWithPrices]] = Future {
     db.withConnection { implicit conn =>
       SQL(
-        """SELECT fp.*, ft.name AS fuelType
+        """SELECT fp.*, ft.name AS fuelType, fs.tradingName AS tradingName, HEX(fp.nodeId_bin) as nodeId,
+          | fs.addressLine1 as addressLine1, fs.addressLine2 as addressLine2, fs.city as city, fs.postcode as postcode
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
+          |LEFT JOIN fuel_stations fs ON fp.nodeId_bin = fs.nodeId_bin
           |WHERE fp.nodeId_bin = UNHEX({nodeId})""".stripMargin
       )
         .on("nodeId" -> nodeId)
-        .as(FuelPrice.fuelPriceParser.*)
+        .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
     }
   }(using databaseExecutionContext)
 

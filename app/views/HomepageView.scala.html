@@ -12,7 +12,7 @@
 @(
         totalFuelStations: Int,
         totalFuelPrices: Int,
-        fuelPricesForStations: Seq[FuelPriceForStation]
+        fuelPricesForStations: Seq[FuelStationWithPrices]
 )(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @dateFormatter = @{
@@ -108,7 +108,7 @@
                                 ),
                                 value = Value(
                                     content = HtmlContent(
-                                        station.address.map(HtmlFormat.escape).mkString("<br>")
+                                        station.location.htmlAddress
                                     )
                                 )
                             )

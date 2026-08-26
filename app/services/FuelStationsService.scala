@@ -4,7 +4,7 @@ import cats.data.{EitherT, OptionT}
 import cats.implicits.*
 import config.AppConfig
 import connectors.FuelPriceConnector
-import models.{FuelPriceForStation, FuelStation, GeoLoc}
+import models.{FuelPriceForStation, FuelStation, FuelStationWithPrices, GeoLoc}
 import net.sf.geographiclib.Geodesic
 import play.api.Logging
 import play.api.http.Status.NOT_FOUND
@@ -48,7 +48,7 @@ class FuelStationsService @Inject()(
     }
   }
 
-  def getLatestFuelPricesWithStation(numberOfResult: Int, geoloc: Option[GeoLoc]): Future[Seq[FuelPriceForStation]] = {
+  def getLatestFuelPricesWithStation(numberOfResult: Int, geoloc: Option[GeoLoc]): Future[Seq[FuelStationWithPrices]] = {
     val radius = appConfig.localStationsRadius
     (for {
       coordinates <- OptionT.fromOption[Future](geoloc)

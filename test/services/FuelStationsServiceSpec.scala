@@ -51,12 +51,10 @@ class FuelStationsServiceSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getLatestFuelPricesWithStation(any[Int], any[Seq[String]])).thenReturn(
         Future.successful(Seq(
-          FuelPriceForStation(
-            "nearNodeId",
-            None,
-            "nearTradingName",
-            Seq.empty,
-            Seq(FuelPrice(140.0, FuelType.E10, Instant.now, Instant.now)))
+          fakeFuelStationWithPrices(
+            nodeId = "nearNodeId",
+            fuelPrices = Seq(FuelPrice(140.0, FuelType.E10, Instant.now, Instant.now))
+          )
         ))
       )
 
@@ -110,12 +108,9 @@ class FuelStationsServiceSpec extends BaseSpec {
     "fall back to an unfiltered query when geoloc is None" in {
       when(mockGetSqlQueries.getLatestFuelPricesWithStation(any[Int], any[Seq[String]])).thenReturn(
         Future.successful(Seq(
-          FuelPriceForStation(
-            "anyNodeId",
-            None,
-            "anyTradingName",
-            Seq.empty,
-            Seq(FuelPrice(145.0, FuelType.E10, Instant.now, Instant.now)))
+          fakeFuelStationWithPrices(
+            nodeId = "anyNodeId",
+            fuelPrices = Seq(FuelPrice(145.0, FuelType.E10, Instant.now, Instant.now)))
         ))
       )
 

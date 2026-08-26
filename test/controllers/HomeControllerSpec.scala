@@ -43,12 +43,9 @@ class HomeControllerSpec extends BaseSpec {
       )
 
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
-        Future.successful(Seq(FuelPriceForStation(
-          "1",
-          None,
-          "trading Name",
-          Seq.empty,
-          Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
 
@@ -66,12 +63,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
-        Future.successful(Seq(FuelPriceForStation(
-          "1",
-          None,
-          "trading Name",
-          Seq.empty,
-          Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
 
@@ -94,12 +88,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
-        Future.successful(Seq(FuelPriceForStation(
-          "1",
-          None,
-          "trading Name",
-          Seq.empty,
-          Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
 
@@ -122,12 +113,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
-        Future.successful(Seq(FuelPriceForStation(
-          "1",
-          None,
-          "trading Name",
-          Seq.empty,
-          Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
 
@@ -150,12 +138,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
-        Future.successful(Seq(FuelPriceForStation(
-          "1",
-          None,
-          "trading Name",
-          Seq.empty,
-          Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
 

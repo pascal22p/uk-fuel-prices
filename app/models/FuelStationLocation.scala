@@ -2,6 +2,7 @@ package models
 
 import play.api.libs.json.{JsPath, Reads}
 import play.api.libs.functional.syntax.*
+import play.twirl.api.HtmlFormat
 
 final case class FuelStationLocation(
                      addressLine1: Option[String],
@@ -15,6 +16,10 @@ final case class FuelStationLocation(
                    ) {
   def fullAddress: String = {
     List(addressLine1, addressLine2, Some(city), Some(postcode)).flatten.mkString(", ")
+  }
+  
+  def htmlAddress: String = {
+    List(addressLine1, addressLine2, Some(city), Some(postcode)).flatten.map(HtmlFormat.escape).mkString("<br />")
   }
 }
 

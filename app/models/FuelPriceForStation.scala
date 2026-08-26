@@ -5,25 +5,17 @@ import play.api.libs.functional.syntax.*
 
 final case class FuelPriceForStation(
                                     nodeId: String,
-                                    publicPhoneNumber: Option[String],
-                                    tradingName: String,
-                                    address: Seq[String],
                                     fuelPrices: Seq[FuelPrice]
                                     )
 
 object FuelPriceForStation {
   implicit val fuelPriceForStationReads: Reads[FuelPriceForStation] = (
     (JsPath \ "node_id").read[String] and
-      (JsPath \ "public_phone_number").readNullable[String] and
-      (JsPath \ "trading_name").read[String] and
       (JsPath \ "fuel_prices").read[Seq[FuelPrice]]
-    ) { (nodeId, publicPhoneNumber, tradingName, fuelPrices) =>
+    ) { (nodeId, fuelPrices) =>
     FuelPriceForStation(
       nodeId = nodeId,
-      publicPhoneNumber = publicPhoneNumber,
-      tradingName = tradingName,
-      fuelPrices = fuelPrices,
-      address = Seq.empty
+      fuelPrices = fuelPrices
     )
   }
 }

@@ -402,18 +402,12 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
       result mustBe Right(List(
         FuelPriceForStation(
           "0028ACEF5F3AFC41C7E7D56FB285A940DFB64D6FEA01CB4ACCD79C148321112D", 
-          None, 
-          "Trading name 1",
-          Seq.empty,
           List(
             FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), 
             FuelPrice(132.9, FuelType.E10, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))
           )),
         FuelPriceForStation(
           "01DA92125C3751767044D06B202F45DA5933F0E16E256FA3E98A16AF8386308D", 
-          Some(""), 
-          "trading name 2", 
-          Seq.empty,
           List(FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))))
       ))
     }
@@ -434,9 +428,6 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
       result mustBe Right(List(
         FuelPriceForStation(
           "0028ACEF5F3AFC41C7E7D56FB285A940DFB64D6FEA01CB4ACCD79C148321112D", 
-          None, 
-          "Trading name 1",
-          Seq.empty,
           List(
             FuelPrice(159.9, FuelType.E5, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z")), 
             FuelPrice(132.9, FuelType.E10, Instant.parse("2026-02-17T16:03:04.938Z"), Instant.parse("2026-02-17T16:00:00Z"))
