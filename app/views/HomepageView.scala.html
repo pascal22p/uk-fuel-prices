@@ -63,13 +63,13 @@
     @messages("homepage.cheapestPrice")
     </h2>
     <p class="govuk-body-m">
-
-        <a href="#"
-        class="govuk-link"
+        <button
+        type="button"
+        class="govuk-button"
         id="use-my-location-a"
         hidden>
         @messages("homepage.useMyLocation")
-        </a>
+        </button>
     </p>
 
     @if(cheapestPricesForStations.isEmpty) {
@@ -145,13 +145,13 @@
     @messages("homepage.recentlyUpdatedPrices")
     </h2>
     <p class="govuk-body-m">
-
-        <a href="#"
-        class="govuk-link"
+        <button
+        type="button"
+        class="govuk-button"
         id="use-my-location-b"
         hidden>
         @messages("homepage.useMyLocation")
-        </a>
+        </button>
     </p>
 
     @if(fuelPricesForStations.isEmpty) {

@@ -9,11 +9,11 @@ trait LoggingWithRequest extends Logging {
 
   @SuppressWarnings(Array("org.wartremover.warts.RedundantConversions"))
   implicit def requestHeaderToMarkerContext(implicit request: RequestHeader): MarkerContext = {
-    val requestId = request.attrs.get(Attrs.RequestId)
-    val sessionId = request.attrs.get(Attrs.SessionId)
+    val requestId = request.attrs.get(Attrs.RequestId).fold("Unknown")(_.toString)
+    val sessionId = request.attrs.get(Attrs.SessionId).fold("Unknown")(_.toString)
 
-    MDC.put("request_id", requestId.fold("Unknown")(_.toString))
-    MDC.put("session_id", sessionId.fold("Unknown")(_.toString))
+    MDC.put("request_id", requestId)
+    MDC.put("session_id", sessionId)
 
     val marker = MarkerFactory.getDetachedMarker(s"requestId=$requestId, sessionId=$sessionId")
     MarkerContext(marker)

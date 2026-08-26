@@ -11,7 +11,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
 import models.{FuelPrice, FuelPriceForStation, FuelStation, FuelStationLocation}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{doNothing, times, verify, when}
-import play.api.libs.json.JsResultException
+import play.api.libs.json.{JsResultException, Json}
 import play.api.test.Helpers.{await, defaultAwaitTimeout}
 import models.FuelType
 
@@ -488,6 +488,42 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       result mustBe a[Left[UpstreamErrorResponse, ?]]
       verify(mockOAuthConnector, times(1)).invalidateToken()
+    }
+
+    "return no stations when a fuel price is older than the configured apiDateFilter" in {
+
+      val apiDateFilter = Instant.parse("2026-08-25T00:00:00Z")
+
+      when(mockAppConfig.apiDateFilter).thenReturn(apiDateFilter)
+      when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
+      when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+      doNothing().when(mockOAuthConnector).invalidateToken()
+
+      val oldPrice = Json.obj(
+        "price" -> 150.9,
+        "fuel_type" -> "E10",
+        "price_last_updated" -> "2026-08-24T23:59:59Z",
+        "price_change_effective_timestamp" -> "2026-08-24T23:59:59Z"
+      )
+
+      val responseJson = Json.arr(
+        Json.obj(
+          "node_id" -> "123",
+          "fuel_prices" -> Json.arr(oldPrice)
+        )
+      )
+
+      server.stubFor(
+        WireMock
+          .get(urlEqualTo("/api/v1/pfs/fuel-prices?batch-number=1"))
+          .willReturn(ok(responseJson.toString))
+      )
+
+
+      val result =
+        sut.fuelPrices(1).value.futureValue
+
+      result mustBe Right(Seq.empty)
     }
 
   }

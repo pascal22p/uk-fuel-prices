@@ -3,7 +3,7 @@ package services
 import cats.data.EitherT
 import cats.implicits.*
 import connectors.PostcodesIOConnector
-import models.{FuelStationWithPrices, FuelType, SearchByPostcodeViewModel}
+import models.{FuelType, SearchByPostcodeViewModel}
 import net.sf.geographiclib.Geodesic
 import queries.GetSqlQueries
 import uk.gov.hmrc.http.HeaderCarrier
@@ -34,14 +34,11 @@ class SearchByPostcodeService @Inject()(
       fuelStationWithPrices <-
         EitherT.liftF(
           getSqlQueries.findPricesForStations(fuelStations.map(_.nodeId)).map { fuelStationsWithPrices =>
-            val stationIndex = fuelStations.map(s => s.nodeId -> s).toMap
+            fuelStationsWithPrices.map { fuelStation =>
+              val latestPrice = fuelStation.fuelPrices.filter(_.fuelType == fuelType).maxByOption(_.priceChangeEffectiveTimestamp).toList
+              val distance    = Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, fuelStation.location.latitude, fuelStation.location.longitude).s12
 
-            fuelStationsWithPrices.map { (nodeId, fuelPrices) =>
-              val station     = stationIndex(nodeId)
-              val latestPrice = fuelPrices.filter(_.fuelType == fuelType).maxByOption(_.priceChangeEffectiveTimestamp).toList
-              val distance    = Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, station.location.latitude, station.location.longitude).s12
-
-              FuelStationWithPrices(station, latestPrice, distance)
+              fuelStation.copy(fuelPrices = latestPrice, distance = distance)
             }.toList
           }
         )

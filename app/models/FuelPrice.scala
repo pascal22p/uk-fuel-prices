@@ -46,22 +46,4 @@ object FuelPrice {
     case price ~ fuelType ~ priceLastUpdated ~ priceChangeEffectiveTimestamp =>
       FuelPrice(price, FuelType.valueOf(fuelType), priceLastUpdated, priceChangeEffectiveTimestamp)
   }
-  
-  @SuppressWarnings(Array("org.wartremover.warts.EnumValueOf"))
-  val fuelPriceWithStationInfoParser: RowParser[(String, String, Option[String], Option[String], Option[String], Option[String], FuelPrice)] = (
-      get[String]("nodeId") ~
-      get[String]("tradingName") ~
-      get[Option[String]]("addressLine1") ~
-      get[Option[String]]("addressLine2") ~
-      get[Option[String]]("city") ~
-      get[Option[String]]("postcode") ~
-      get[Double]("price") ~
-      get[String]("fuelType") ~
-      get[Instant]("priceLastUpdated") ~
-      get[Instant]("priceChangeEffectiveTimestamp")
-    ).map {
-    case nodeId ~ tradingName ~ addressLine1 ~ addressLine2 ~ city ~ postcode ~ price ~ fuelType ~ priceLastUpdated ~ priceChangeEffectiveTimestamp =>
-      (nodeId, tradingName, addressLine1, addressLine2, city, postcode, FuelPrice(price, FuelType.valueOf(fuelType), priceLastUpdated, priceChangeEffectiveTimestamp))
-  }
-  
 }

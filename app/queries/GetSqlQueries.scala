@@ -309,10 +309,10 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def findPricesForStations(nodeIds: Seq[String]): Future[Map[String, Seq[FuelPrice]]] = Future {
+  def findPricesForStations(nodeIds: Seq[String]): Future[Seq[FuelStationWithPrices]] = Future {
     val binaryIds = nodeIds.map(java.util.HexFormat.of().parseHex)
 
-    val results = db.withConnection { implicit conn =>
+    val rows = db.withConnection { implicit conn =>
       SQL(
         """SELECT fp.*, fs.tradingName AS tradingName, ft.name AS fuelType, HEX(fp.nodeId_bin) as nodeId,
           | fs.addressLine1 as addressLine1, fs.addressLine2 as addressLine2, fs.city as city, fs.postcode as postcode
@@ -322,10 +322,13 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
           |WHERE fp.nodeId_bin IN ({nodeIds})""".stripMargin
       )
         .on("nodeIds" -> binaryIds)
-        .as(FuelPrice.fuelPriceWithStationInfoParser.*)
+        .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
     }
-    
-    results.groupMap(_._1)(_._7)
+
+    rows.groupBy(_.nodeId).flatMap { case (_, stationRows) =>
+      val prices = stationRows.flatMap(_.fuelPrices)
+      stationRows.headOption.map(_.copy(fuelPrices = prices))
+    }.toSeq
   }(using databaseExecutionContext)
 
   def findAbsentFuelStations(nodeIds: Seq[String]): Future[Seq[String]] = Future {

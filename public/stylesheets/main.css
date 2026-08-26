@@ -801,3 +801,28 @@ screen and (min-width:40.0625em) and (-ms-high-contrast:active) {
         top: 0;
     }
 }
+
+.govuk-button {
+    background-color: #1d70b8;
+    color: #fff;
+    width: auto;
+    margin: 0 0 15px;
+    padding: 12px 20px;
+    box-shadow: 0 2px 0 #003078;
+}
+
+.govuk-button:hover {
+    background-color: #003078;
+}
+
+.govuk-button:active {
+    background-color: #003078;
+    box-shadow: none;
+    top: 2px;
+}
+
+.govuk-button:focus {
+    background-color: #ffdd00;
+    color: #0b0c0c;
+    box-shadow: 0 2px 0 #0b0c0c;
+}

@@ -2,7 +2,7 @@ package services
 
 import cats.data.EitherT
 import connectors.PostcodesIOConnector
-import models.{FuelPrice, FuelStation, FuelStationLocation, FuelType, GeoLoc, SearchByPostcodeViewModel}
+import models.{FuelPrice, FuelStation, FuelStationLocation, FuelStationWithPrices, FuelType, GeoLoc, SearchByPostcodeViewModel}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, times, verify, when}
 import queries.GetSqlQueries
@@ -39,11 +39,11 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
     FuelStationLocation(None, None, "city", None, None, "postcode", 51.51, -0.13), // ~1km away
     List.empty
   )
+  val now = Instant.now
+  val nearStationPrice = FuelPrice(140.0, FuelType.E10, now, now)
+  val nearStationWithPrice = FuelStationWithPrices(nearStation, List(nearStationPrice), 1000.0)
 
   "getViewModel" must {
-
-    val now = Instant.now
-    val nearStationPrice = FuelPrice(140.0, FuelType.E10, now, now)
 
     "return a view model containing only stations within the radius, with distances and coordinates preserved" in {
       when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
@@ -53,7 +53,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
         Future.successful(Seq(nearStation, farStation))
       )
       when(mockGetSqlQueries.findPricesForStations(any[Seq[String]])).thenReturn(
-        Future.successful(Map("nearNodeId" -> Seq(nearStationPrice)))
+        Future.successful(Seq(nearStationWithPrice))
       )
 
       val result = sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
@@ -89,6 +89,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
 
     "return a view model containing the station with an empty fuelPrices list when the station has prices but none match the requested fuel type" in {
       val wrongFuelTypePrice = FuelPrice(155.9, FuelType.B7_STANDARD, now, now)
+      val nearStationWithPrice = FuelStationWithPrices(nearStation, List(wrongFuelTypePrice), 1000.0)
 
       when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](geoLoc)
@@ -97,7 +98,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
         Future.successful(Seq(nearStation))
       )
       when(mockGetSqlQueries.findPricesForStations(any[Seq[String]])).thenReturn(
-        Future.successful(Map("nearNodeId" -> Seq(wrongFuelTypePrice)))
+        Future.successful(Seq(nearStationWithPrice))
       )
 
       val result = sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
@@ -124,7 +125,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
         Future.successful(Seq(nearStation))
       )
       when(mockGetSqlQueries.findPricesForStations(any[Seq[String]])).thenReturn(
-        Future.successful(Map.empty[String, Seq[FuelPrice]])
+        Future.successful(Seq.empty)
       )
 
       val result = sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
@@ -150,7 +151,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
         Future.successful(Seq(farStation))
       )
       when(mockGetSqlQueries.findPricesForStations(Seq.empty)).thenReturn(
-        Future.successful(Map.empty[String, Seq[FuelPrice]])
+        Future.successful(Seq.empty)
       )
 
       val result = sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
@@ -176,7 +177,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
         Future.successful(Seq.empty)
       )
       when(mockGetSqlQueries.findPricesForStations(Seq.empty)).thenReturn(
-        Future.successful(Map.empty[String, Seq[FuelPrice]])
+        Future.successful(Seq.empty)
       )
 
       sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
