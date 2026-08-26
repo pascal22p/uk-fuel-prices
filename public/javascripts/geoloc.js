@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!navigator.geolocation) {
         console.warn('[geoloc] Geolocation is not supported');
+    }
 
     const params = new URLSearchParams(window.location.search);
 
