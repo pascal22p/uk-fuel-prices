@@ -4,8 +4,7 @@ import cats.data.EitherT
 import cats.implicits.*
 import cats.syntax.all.*
 import connectors.FuelPriceConnector
-import models.{FuelPriceForStation, FuelStationWithPrices}
-import play.api.Logging
+import models.{FuelStationWithPrices, LoggingWithRequest}
 import play.api.http.Status.NOT_FOUND
 import queries.{DeleteSqlQueries, GetSqlQueries, InsertSqlQueries}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
@@ -20,7 +19,7 @@ class FuelPriceService @Inject()(
                                 insertSqlQueries: InsertSqlQueries,
                                 getSqlQueries: GetSqlQueries,
                                 deleteSqlQueries: DeleteSqlQueries
-                                )(implicit ec: ExecutionContext) extends Logging {
+                                )(implicit ec: ExecutionContext) extends LoggingWithRequest {
 
   final def uploadAllFuelStations(batchNumber: Int = 1, effectiveStartDate : Option[LocalDateTime] = None)
                                  (implicit hc: HeaderCarrier)

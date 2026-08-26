@@ -1,6 +1,5 @@
 package services
 
-import cats.data.OptionT
 import connectors.FuelPriceConnector
 import models.{FuelPrice, FuelPriceForStation, FuelStation, FuelStationLocation, FuelType}
 import queries.{DeleteSqlQueries, GetSqlQueries, InsertSqlQueries}

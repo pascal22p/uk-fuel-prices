@@ -1,6 +1,5 @@
 package jobs
 
-import play.api.Logging
 import services.FuelPriceService
 import uk.gov.hmrc.http.HeaderCarrier
 import config.AppConfig
@@ -10,7 +9,7 @@ import org.apache.pekko.actor.Actor
 import play.api.db.Database
 import anorm.*
 import anorm.SqlParser.*
-import models.LockId
+import models.{LockId, LoggingWithRequest}
 
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -24,7 +23,7 @@ class PartialUpdateStationsAndPricesJob(
                                             appConfig: AppConfig
 )(implicit ec: ExecutionContext)
     extends Actor
-    with Logging {
+    with LoggingWithRequest {
 
   private val tracer = GlobalOpenTelemetry.getTracer(appConfig.appName)
 

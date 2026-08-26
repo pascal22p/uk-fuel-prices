@@ -132,7 +132,7 @@ lazy val ukFuelPrice = (project in file("."))
       "-Xkind-projector",
       "-Wvalue-discard",
       "-Wunused:all",
-      //"-Werror",
+      "-Werror",
       //"-Yexplicit-nulls",
       "-Wsafe-init",
       "-Wconf:msg=unused import&src=html/.*:s",

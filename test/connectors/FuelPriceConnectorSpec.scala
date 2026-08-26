@@ -390,6 +390,7 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
       when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+      when(mockAppConfig.apiDateFilter).thenReturn(Instant.parse("2020-02-17T16:00:00Z"))
 
       server.stubFor(
         WireMock
@@ -416,6 +417,7 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
       when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+      when(mockAppConfig.apiDateFilter).thenReturn(Instant.parse("2020-02-17T16:00:00Z"))
 
       server.stubFor(
         WireMock
@@ -439,6 +441,7 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
       when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+      when(mockAppConfig.apiDateFilter).thenReturn(Instant.parse("2020-02-17T16:00:00Z"))
 
       server.stubFor(
         WireMock
@@ -455,6 +458,7 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       when(mockOAuthConnector.getValidToken()(using any())).thenReturn(EitherT.rightT[Future, UpstreamErrorResponse]("valid-token"))
       when(mockAppConfig.fuelApiHost).thenReturn(s"http://localhost:${server.port()}")
+      when(mockAppConfig.apiDateFilter).thenReturn(Instant.parse("2020-02-17T16:00:00Z"))
 
       server.stubFor(
         WireMock

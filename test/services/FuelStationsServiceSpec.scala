@@ -1,7 +1,7 @@
 package services
 
 import connectors.FuelPriceConnector
-import models.{FuelPrice, FuelPriceForStation, FuelStation, FuelStationLocation, FuelType, GeoLoc}
+import models.{FuelPrice, FuelStation, FuelStationLocation, FuelType, GeoLoc}
 import queries.GetSqlQueries
 import testUtils.BaseSpec
 import uk.gov.hmrc.http.HeaderCarrier
