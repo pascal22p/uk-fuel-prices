@@ -5,7 +5,7 @@
 @this(main: Main,
         govukTable: GovukTable)
 
-@(stations: Seq[FuelPriceForStation], postcode: String)(implicit request: AuthenticatedRequest[?], messages: Messages)
+@(stations: Seq[FuelStationWithPrices], postcode: String)(implicit request: AuthenticatedRequest[?], messages: Messages)
 
 @main(caption = Some(s"Postcode $postcode")) {
       @govukTable(Table(

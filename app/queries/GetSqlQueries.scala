@@ -5,7 +5,7 @@ import anorm.SqlParser.scalar
 import cats.data.OptionT
 import models.*
 import play.api.db.Database
-import utils.BoundingBox
+import utils.GeoBoundingBox
 
 import java.time.{Instant, LocalDateTime}
 import javax.inject.{Inject, Singleton}
@@ -33,12 +33,28 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def getLatestFuelPricesWithStation(numberOfResult: Int): Future[Seq[FuelPriceForStation]] = Future {
+  def getLatestFuelPricesWithStation(numberOfResult: Int, stationsFilter: Seq[String] = Seq.empty): Future[Seq[FuelStationWithPrices]] = Future {
+    val stationParams: Seq[NamedParameter] =
+      stationsFilter.zipWithIndex.map { case (h, i) => NamedParameter(s"station$i", h) }
+
+    val inClause = if (stationsFilter.nonEmpty) {
+      val placeholders = stationsFilter.indices.map(i => s"UNHEX({station$i})").mkString(", ")
+      s"WHERE fs.nodeId_bin IN ($placeholders)"
+    } else {
+      ""
+    }
+
+    val allParams: Seq[NamedParameter] = NamedParameter("limit", numberOfResult) +: stationParams
+
     val rows = db.withConnection { implicit conn =>
       SQL(
         s"""SELECT
            |    nodeId,
            |    tradingName,
+           |    addressLine1,
+           |    addressLine2,
+           |    city,
+           |    postcode,
            |    fuelType,
            |    priceChangeEffectiveTimestamp,
            |    priceLastUpdated,
@@ -47,6 +63,10 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |    SELECT
            |        HEX(fp.nodeId_bin) AS nodeId,
            |        fs.tradingName AS tradingName,
+           |        fs.addressLine1 AS addressLine1,
+           |        fs.addressLine2 AS addressLine2,
+           |        fs.city AS city,
+           |        fs.postcode AS postcode,
            |        ft.name AS fuelType,
            |        fp.priceChangeEffectiveTimestamp AS priceChangeEffectiveTimestamp,
            |        fp.priceLastUpdated AS priceLastUpdated,
@@ -60,29 +80,20 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |        ON fp.fuelTypeId = ft.id
            |    LEFT JOIN fuel_stations fs
            |        ON fp.nodeId_bin = fs.nodeId_bin
+           |    $inClause
            |) latest
            |WHERE rowNumber = 1
            |ORDER BY priceLastUpdated DESC
            |LIMIT {limit}""".stripMargin
       )
-        .on("limit" -> numberOfResult)
-        .as(FuelPrice.fuelPriceWithStationInfoParser.*)
+        .on(allParams*)
+        .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
     }
 
-    rows
-      .groupBy { case (nodeId, tradingName, _) =>
-        (nodeId, tradingName)
-      }
-      .map {
-        case ((nodeId, tradingName), rowsPerStation) =>
-          FuelPriceForStation(
-            nodeId = nodeId,
-            publicPhoneNumber = None,
-            tradingName = tradingName,
-            fuelPrices = rowsPerStation.map(_._3)
-          )
-      }.toSeq
-      .sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(using Ordering[Instant].reverse)
+    rows.groupBy(_.nodeId).flatMap { case (_, stationRows) =>
+      val prices = stationRows.flatMap(_.fuelPrices)
+      stationRows.headOption.map(_.copy(fuelPrices = prices))
+    }.toSeq.sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(using Ordering[Instant].reverse)
   }(using databaseExecutionContext)
 
   def getUserData(username: String): OptionT[Future, UserData] = OptionT(Future {
@@ -107,7 +118,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def getFuelStations(boundingBox: BoundingBox): Future[Seq[FuelStation]] = Future {
+  def getFuelStations(geoBoundingBox: GeoBoundingBox): Future[Seq[FuelStation]] = Future {
     db.withConnection { implicit conn =>
       SQL(
         """SELECT *, HEX(nodeId_bin) as nodeId
@@ -115,10 +126,10 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
           |WHERE latitude > {latitude_min} AND latitude < {latitude_max} AND
           |  longitude > {longitude_min} AND longitude < {longitude_max}""".stripMargin)
         .on(
-          "latitude_min" -> boundingBox.minLat, 
-          "latitude_max" -> boundingBox.maxLat, 
-          "longitude_min" -> boundingBox.minLon, 
-          "longitude_max" -> boundingBox.maxLon
+          "latitude_min" -> geoBoundingBox.minLat, 
+          "latitude_max" -> geoBoundingBox.maxLat, 
+          "longitude_min" -> geoBoundingBox.minLon, 
+          "longitude_max" -> geoBoundingBox.maxLon
         )
         .as(FuelStation.fuelStationParser.*)
     }
@@ -135,16 +146,18 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def findPricesForStation(nodeId: String): Future[Seq[FuelPrice]] = Future {
+  def findPricesForStation(nodeId: String): Future[Seq[FuelStationWithPrices]] = Future {
     db.withConnection { implicit conn =>
       SQL(
-        """SELECT fp.*, ft.name AS fuelType
+        """SELECT fp.*, ft.name AS fuelType, fs.tradingName AS tradingName, HEX(fp.nodeId_bin) as nodeId,
+          | fs.addressLine1 as addressLine1, fs.addressLine2 as addressLine2, fs.city as city, fs.postcode as postcode
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
+          |LEFT JOIN fuel_stations fs ON fp.nodeId_bin = fs.nodeId_bin
           |WHERE fp.nodeId_bin = UNHEX({nodeId})""".stripMargin
       )
         .on("nodeId" -> nodeId)
-        .as(FuelPrice.fuelPriceParser.*)
+        .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
     }
   }(using databaseExecutionContext)
 
@@ -153,7 +166,8 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
 
     val results = db.withConnection { implicit conn =>
       SQL(
-        """SELECT fp.*, fs.tradingName AS tradingName, ft.name AS fuelType, HEX(fp.nodeId_bin) as nodeId
+        """SELECT fp.*, fs.tradingName AS tradingName, ft.name AS fuelType, HEX(fp.nodeId_bin) as nodeId,
+          | fs.addressLine1 as addressLine1, fs.addressLine2 as addressLine2, fs.city as city, fs.postcode as postcode
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
           |LEFT JOIN fuel_stations fs ON fp.nodeId_bin = fs.nodeId_bin
@@ -163,7 +177,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
         .as(FuelPrice.fuelPriceWithStationInfoParser.*)
     }
     
-    results.groupMap(_._1)(_._3)
+    results.groupMap(_._1)(_._7)
   }(using databaseExecutionContext)
 
   def findAbsentFuelStations(nodeIds: Seq[String]): Future[Seq[String]] = Future {

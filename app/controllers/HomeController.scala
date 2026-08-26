@@ -2,20 +2,24 @@ package controllers
 
 import actions.AuthAction
 import config.AppConfig
+import models.GeoLoc
 
 import javax.inject.*
 import play.api.*
 import play.api.i18n.I18nSupport
 import play.api.mvc.*
 import queries.GetSqlQueries
+import services.FuelStationsService
 import views.html.{HomepageView, StationView}
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 @Singleton
 class HomeController @Inject()(
                                 val controllerComponents: ControllerComponents,
                                 getSqlQueries: GetSqlQueries,
+                                fuelStationsService: FuelStationsService,
                                 authAction: AuthAction,
                                 appConfig: AppConfig,
                                 stationView: StationView,
@@ -23,12 +27,29 @@ class HomeController @Inject()(
                               )(implicit ec: ExecutionContext) extends BaseController with I18nSupport{
 
   def index(): Action[AnyContent] = authAction.async { implicit authenticatedRequest =>
+    val geoloc = authenticatedRequest.queryString.get("loc")
+      .flatMap(_.headOption)
+      .flatMap { locString =>
+        val pattern = "([-0-9.]+)[^0-9-.]([-0-9.]+)".r
+        locString match {
+          case pattern(lat, long) =>
+            for {
+              latD  <- Try(lat.toDouble).toOption
+              longD <- Try(long.toDouble).toOption
+            } yield GeoLoc(latitude = latD, longitude = longD)
+          case _ => None
+        }
+      }
     for {
       totalFuelStations <- getSqlQueries.getTotalFuelStations
       totalFuelPrices <- getSqlQueries.getTotalFuelPrices
-      lastUpdates <- getSqlQueries.getLatestFuelPricesWithStation(appConfig.maxCountForLastUpdatedPrices)
+      lastUpdates <- fuelStationsService.getLatestFuelPricesWithStation(appConfig.maxCountForLastUpdatedPrices, geoloc)
     } yield {
-     Ok(homepageView(totalFuelStations, totalFuelPrices, lastUpdates))
+     Ok(homepageView(
+       totalFuelStations,
+       totalFuelPrices,
+       lastUpdates
+     ))
     }
   }
 

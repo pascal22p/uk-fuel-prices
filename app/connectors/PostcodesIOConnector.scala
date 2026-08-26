@@ -2,7 +2,7 @@ package connectors
 
 import cats.data.EitherT
 import config.AppConfig
-import models.LoggingWithRequest
+import models.{GeoLoc, LoggingWithRequest}
 import play.api.libs.json.JsValue
 import uk.gov.hmrc.http.HttpReads.Implicits.*
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -19,7 +19,7 @@ class PostcodesIOConnector @Inject()(
                                     httpClientResponse: HttpClientResponse)
                                     (implicit ec: ExecutionContext) extends LoggingWithRequest {
 
-  def getCoordinates(postcode: String)(implicit hc: HeaderCarrier): EitherT[Future, UpstreamErrorResponse, (Double, Double)] = {
+  def getCoordinates(postcode: String)(implicit hc: HeaderCarrier): EitherT[Future, UpstreamErrorResponse, GeoLoc] = {
     val url = s"${appConfig.postcodeIOHost}/postcodes/${postcode.replace(" ", "")}"
     httpClientResponse.read(
       httpClient
@@ -29,7 +29,7 @@ class PostcodesIOConnector @Inject()(
       val json = response.json
       val latitude = (json \ "result" \ "latitude").as[Double]
       val longitude = (json \ "result" \ "longitude").as[Double]
-      (latitude, longitude)
+      GeoLoc(latitude, longitude)
     }
   }
 }

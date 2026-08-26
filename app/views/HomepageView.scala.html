@@ -2,16 +2,17 @@
 @import views.html.Main
 @import java.time.format.DateTimeFormatter
 @import java.time.ZoneId
+@import play.twirl.api.HtmlFormat
 
 @this(
         main: Main,
-        govukTable: GovukTable
+        govukSummaryList: GovukSummaryList
 )
 
 @(
         totalFuelStations: Int,
         totalFuelPrices: Int,
-        fuelPricesForStations: Seq[FuelPriceForStation]
+        fuelPricesForStations: Seq[FuelStationWithPrices]
 )(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @dateFormatter = @{
@@ -20,127 +21,117 @@
     .withZone(ZoneId.of("Europe/London"))
 }
 
-@stationLink(station: FuelPriceForStation) = {
-    <a
-    class="govuk-link"
-    href="@controllers.routes.HomeController.fuelStationDetails(station.nodeId).url">
-    @station.tradingName
-    </a>
-}
+@main(extraHeaders = Seq(Html("""<script src="/assets/javascripts/geoloc.js" defer></script>"""))) {
 
-@main() {
+    <p class="govuk-body-l">
+    @messages("homepage.intro")
+    </p>
 
-    <p class="govuk-body-m"><a class="govuk-link" href="@routes.SearchByPostcodeController.showPostcodeForm()">Find fuel prices in your area by searching by postcode</a></p>
+    <p class="govuk-body">
+        <a class="govuk-link" href="@routes.SearchByPostcodeController.showPostcodeForm()">
+        @messages("homepage.findPricesByPostcode")
+        </a>
+    </p>
+
+    <hr class="govuk-section-break govuk-section-break--visible govuk-section-break--l">
+
+    <h2 class="govuk-heading-l">
+    @messages("homepage.overview")
+    </h2>
 
     <div class="govuk-grid-row">
 
         <div class="govuk-grid-column-one-half">
-            <div class="govuk-panel govuk-panel--confirmation">
-                <h2 class="govuk-panel__title">
-                @totalFuelStations
-                </h2>
-                <div class="govuk-panel__body">
-                    @messages("homepage.fuelStations")
-                </div>
-            </div>
+            <span class="govuk-caption-m">@messages("homepage.fuelStations")</span>
+            <p class="govuk-heading-xl govuk-!-margin-bottom-0">@totalFuelStations</p>
         </div>
 
         <div class="govuk-grid-column-one-half">
-            <div class="govuk-panel govuk-panel--confirmation">
-                <h2 class="govuk-panel__title">
-                @totalFuelPrices
-                </h2>
-                <div class="govuk-panel__body">
-                    @messages("homepage.fuelPrices")
-                </div>
-            </div>
+            <span class="govuk-caption-m">@messages("homepage.fuelPrices")</span>
+            <p class="govuk-heading-xl govuk-!-margin-bottom-0">@totalFuelPrices</p>
         </div>
 
     </div>
 
+    <hr class="govuk-section-break govuk-section-break--visible govuk-section-break--l">
+
     <h2 class="govuk-heading-l">
-        @messages("homepage.recentlyUpdatedPrices")
+    @messages("homepage.recentlyUpdatedPrices")
     </h2>
+    <p class="govuk-body-m">
+
+        <a href="#"
+        class="govuk-link"
+        id="use-my-location"
+        hidden>
+        @messages("homepage.useMyLocation")
+        </a>
+    </p>
 
     @if(fuelPricesForStations.isEmpty) {
 
         <p class="govuk-body">
-            @messages("homepage.noFuelPrices")
+        @messages("homepage.noFuelPrices")
         </p>
 
     } else {
 
-        <div class="govuk-table-responsive">
-        @govukTable(
-            Table(
-                caption = Some(messages("homepage.lastUpdatedPrices")),
-                captionClasses = "govuk-table__caption--m",
+        @for(station <- fuelPricesForStations) {
 
-                head = Some(
-                    Seq(
-                        HeadCell(
-                            content = Text(messages("homepage.station"))
-                        ),
-                        HeadCell(
-                            content = Text(messages("homepage.fuel"))
-                        ),
-                        HeadCell(
-                            content = Text(messages("homepage.prices")),
-                            classes = "govuk-table__header--numeric"
-                        ),
-                        HeadCell(
-                            content = Text(messages("homepage.updated"))
-                        )
-                    )
-                ),
-
-                rows = fuelPricesForStations.flatMap { station =>
-                    station.fuelPrices.zipWithIndex.map {
-                        case (price, index) =>
-
-                            val stationCell =
-                                if (index == 0) {
-                                    Seq(
-                                        TableRow(
-                                            content = HtmlContent(
-                                                stationLink(station)
-                                            ),
-                                            rowspan = Some(
-                                                station.fuelPrices.size
-                                            ),
-                                            attributes = Map(
-                                                "scope" -> "rowgroup"
-                                            )
-                                        )
-                                    )
-                                } else {
-                                    Seq.empty[TableRow]
-                                }
-
-                            stationCell ++ Seq(
-                                TableRow(
-                                    content = Text(
-                                        price.fuelType.toString
-                                    )
-                                ),
-                                TableRow(
-                                    content = Text(
-                                        f"${price.price}%.1fp"
-                                    ),
-                                    classes = "govuk-table__cell--numeric"
-                                ),
-                                TableRow(
-                                    content = Text(
-                                        dateFormatter.format(
-                                            price.priceLastUpdated
+            @govukSummaryList(
+                SummaryList(
+                    card = Some(
+                        Card(
+                            title = Some(
+                                CardTitle(
+                                    content = Text(station.tradingName)
+                                )
+                            ),
+                            actions = Some(
+                                Actions(
+                                    items = Seq(
+                                        ActionItem(
+                                            href = controllers.routes.HomeController.fuelStationDetails(station.nodeId).url,
+                                            content = Text(messages("homepage.viewDetails")),
+                                            visuallyHiddenText = Some(station.tradingName)
                                         )
                                     )
                                 )
                             )
-                    }
-                }
+                        )
+                    ),
+                    rows =
+                        Seq(
+                            SummaryListRow(
+                                key = Key(
+                                    content = Text(messages("homepage.address"))
+                                ),
+                                value = Value(
+                                    content = HtmlContent(
+                                        station.location.htmlAddress
+                                    )
+                                )
+                            )
+                        ) ++ station.fuelPrices.map { price =>
+                            SummaryListRow(
+                                key = Key(
+                                    content = Text(price.fuelType.toString)
+                                ),
+                                value = Value(
+                                    content = HtmlContent(
+                                        s"""
+                                <strong>${f"${price.price}%.1fp"}</strong>
+                                <br>
+                                ${dateFormatter.format(price.priceLastUpdated)}
+                                """
+                                    )
+                                )
+                            )
+                        }
+                )
             )
-        )
-        </div>
+        }
+
     }
+
 }

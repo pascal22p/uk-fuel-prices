@@ -26,4 +26,9 @@ homepage.station = Station
 homepage.fuel = Fuel
 homepage.prices = Prices
 homepage.updated = Updated
-
+homepage.findPricesByPostcode = Find fuel prices in your area by searching by postcode
+homepage.useMyLocation = Use my current location
+homepage.address = Address
+homepage.viewDetails = View details
+homepage.intro = Compare fuel prices at stations near you, updated regularly throughout the day.
+homepage.overview = Overview

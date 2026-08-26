@@ -1,5 +1,6 @@
 package services
 
+import cats.data.OptionT
 import connectors.FuelPriceConnector
 import models.{FuelPrice, FuelPriceForStation, FuelStation, FuelStationLocation, FuelType}
 import queries.{DeleteSqlQueries, GetSqlQueries, InsertSqlQueries}
@@ -100,10 +101,14 @@ class FuelPriceServiceSpec extends BaseSpec {
     "upload data recursively until not found" in {
       when(mockFuelPriceConnector.fuelPrices(any(), any())(using any())).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelPriceForStation("nodeId1", None, "tradingName", Seq(FuelPrice(150.0, FuelType.E10, Instant.now, Instant.now)))
+          FuelPriceForStation(
+            "nodeId1", 
+            Seq(FuelPrice(150.0, FuelType.E10, Instant.now, Instant.now)))
         )),
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelPriceForStation("nodeId2", None, "tradingName", Seq(FuelPrice(1.50, FuelType.E10, Instant.now, Instant.now), FuelPrice(1500, FuelType.E10, Instant.now, Instant.now)))
+          FuelPriceForStation(
+            "nodeId2",
+            Seq(FuelPrice(1.50, FuelType.E10, Instant.now, Instant.now), FuelPrice(1500, FuelType.E10, Instant.now, Instant.now)))
         )),
         EitherT.leftT[Future, Seq[FuelPriceForStation]](UpstreamErrorResponse("not found", NOT_FOUND))
       )
@@ -137,7 +142,9 @@ class FuelPriceServiceSpec extends BaseSpec {
     "upload data recursively until empty" in {
       when(mockFuelPriceConnector.fuelPrices(any(), any())(using any())).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelPriceForStation("nodeId", None, "tradingName", Seq.empty)
+          FuelPriceForStation(
+            "nodeId",
+            Seq.empty)
         )),
         EitherT.rightT[Future, UpstreamErrorResponse](Seq.empty)
       )
@@ -166,11 +173,19 @@ class FuelPriceServiceSpec extends BaseSpec {
     "Ignore invalid node ids" in {
       when(mockFuelPriceConnector.fuelPrices(any(), any())(using any())).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelPriceForStation("nodeId1", None, "tradingName", Seq(FuelPrice(148.0, FuelType.E10, Instant.now, Instant.now)))
+          FuelPriceForStation(
+            "nodeId1",
+            Seq(FuelPrice(148.0, FuelType.E10, Instant.now, Instant.now)))
         )),
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelPriceForStation("nodeId2", None, "tradingName2", Seq(FuelPrice(1.50, FuelType.E10, Instant.now, Instant.now), FuelPrice(1500, FuelType.E10, Instant.now, Instant.now))),
-          FuelPriceForStation("nodeId3", None, "tradingName3", Seq(FuelPrice(1.53, FuelType.B10, Instant.now, Instant.now)))
+          FuelPriceForStation(
+            "nodeId2",
+            Seq(FuelPrice(1.50, FuelType.E10, Instant.now, Instant.now), FuelPrice(1500, FuelType.E10, Instant.now, Instant.now))
+          ),
+          FuelPriceForStation(
+            "nodeId3",
+            Seq(FuelPrice(1.53, FuelType.B10, Instant.now, Instant.now))
+          )
         )),
         EitherT.leftT[Future, Seq[FuelPriceForStation]](UpstreamErrorResponse("not found", NOT_FOUND))
       )
@@ -205,10 +220,14 @@ class FuelPriceServiceSpec extends BaseSpec {
     "Stop recursion if the sanitised list is empty" in {
       when(mockFuelPriceConnector.fuelPrices(any(), any())(using any())).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelPriceForStation("nodeId1", None, "tradingName", Seq(FuelPrice(148.0, FuelType.E10, Instant.now, Instant.now)))
+          FuelPriceForStation(
+            "nodeId1",
+            Seq(FuelPrice(148.0, FuelType.E10, Instant.now, Instant.now)))
         )),
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelPriceForStation("nodeId2", None, "tradingName2", Seq(FuelPrice(1.50, FuelType.E10, Instant.now, Instant.now), FuelPrice(1500, FuelType.E10, Instant.now, Instant.now)))
+          FuelPriceForStation(
+            "nodeId2",
+            Seq(FuelPrice(1.50, FuelType.E10, Instant.now, Instant.now), FuelPrice(1500, FuelType.E10, Instant.now, Instant.now)))
         ))
       )
 
@@ -267,8 +286,8 @@ class FuelPriceServiceSpec extends BaseSpec {
       )
 
       when(mockGetSqlQueries.findPricesForStation(any())).thenReturn(
-        Future.successful(Seq(FuelPrice(150.0, FuelType.E10, now, now))),
-        Future.successful(Seq(FuelPrice(110.0, FuelType.E5, now, now)))
+        Future.successful(Seq(fakeFuelStationWithPrices(nodeId = "nodeId1", fuelPrices = Seq(FuelPrice(150.0, FuelType.E10, now, now))))),
+        Future.successful(Seq(fakeFuelStationWithPrices(nodeId = "nodeId2", fuelPrices = Seq(FuelPrice(110.0, FuelType.E5, now, now)))))
       )
 
       val result = sut.getFuelPriceFromPostcode("NE").futureValue

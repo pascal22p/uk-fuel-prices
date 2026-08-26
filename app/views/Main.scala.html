@@ -12,7 +12,10 @@
 )
 
 
-@(caption: Option[String] = None, extraHeaders: List[String] = List.empty)(contentBlock: Html)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
+@(
+        caption: Option[String] = None,
+        extraHeaders: Seq[Html] = Seq.empty
+)(contentBlock: Html)(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @timeoutDialog = {
 @hmrcTimeoutDialog(TimeoutDialog(
@@ -41,7 +44,6 @@
 }
 
 @favouriteNodeId: Seq[ServiceNavigationItem] = @{
-    println(authenticatedRequest.localSession.sessionData.userData)
     authenticatedRequest.localSession.sessionData.userData.flatMap(data => Option(data.favouriteNodeId).filter(_.nonEmpty)) match {
         case None => Seq.empty
         case Some(nodeId) => Seq(ServiceNavigationItem(
@@ -71,7 +73,6 @@
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@@0,100..900;1,100..900&display=swap" rel="stylesheet">
 
-        @*<link rel="icon" type="image/png" href="@routes.AssetsController.get("images/favicon.png")">*@
         <link rel="stylesheet" media="screen" href="@assetConfig.hmrcFrontendCssUrl">
         <script type="module" src="@{assetConfig.hmrcFrontendJsUrl}"></script>
         <link rel="stylesheet" media="screen" href="/assets/stylesheets/main.css">
@@ -79,14 +80,14 @@
         @if(authenticatedRequest.request.uri.contains(controllers.routes.SessionController.loginOnLoad("").path.takeWhile(_ != '?'))) {
             <link rel="canonical" href="@authenticatedRequest.request.host@controllers.routes.SessionController.loginOnLoad("").path.takeWhile(_ != '?')">
             <meta name="robots" content="noindex">
-            }
+        }
 
         @if(authenticatedRequest.localSession.sessionData.userData.isDefined){
             @timeoutDialog
         }
 
         @for(header <- extraHeaders) {
-            @Html(header)
+            @header
         }
 
     </head>
