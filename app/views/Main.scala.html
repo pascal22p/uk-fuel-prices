@@ -75,7 +75,7 @@
 
         <link rel="stylesheet" media="screen" href="@assetConfig.hmrcFrontendCssUrl">
         <script type="module" src="@{assetConfig.hmrcFrontendJsUrl}"></script>
-        <link rel="stylesheet" media="screen" href="/assets/stylesheets/main.css">
+        <link rel="stylesheet" media="screen" href="@routes.Assets.versioned("stylesheets/main.css")">
 
         @if(authenticatedRequest.request.uri.contains(controllers.routes.SessionController.loginOnLoad("").path.takeWhile(_ != '?'))) {
             <link rel="canonical" href="@authenticatedRequest.request.host@controllers.routes.SessionController.loginOnLoad("").path.takeWhile(_ != '?')">

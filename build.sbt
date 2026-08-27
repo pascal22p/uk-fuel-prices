@@ -96,6 +96,7 @@ lazy val ukFuelPrice = (project in file("."))
   .enablePlugins(JavaAppPackaging)
   .enablePlugins(SbtWeb)
   .settings(
+    pipelineStages := Seq(digest),
     PlayKeys.playDefaultPort := 9234,
     libraryDependencies ++= LibDependencies.all,
     dependencyOverrides ++= Seq(
