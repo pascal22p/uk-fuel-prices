@@ -241,7 +241,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     rows.groupBy(_.nodeId).flatMap { case (_, stationRows) =>
       val prices = stationRows.flatMap(_.fuelPrices)
       stationRows.headOption.map(_.copy(fuelPrices = prices))
-    }.toSeq.sortBy(_.fuelPrices.map(_.priceLastUpdated).max)(using Ordering[Instant].reverse)
+    }.toSeq.sortBy(_.fuelPrices.map(_.price).min)(using Ordering[Double])
   }(using databaseExecutionContext)
 
   def getUserData(username: String): OptionT[Future, UserData] = OptionT(Future {
