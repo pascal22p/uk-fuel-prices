@@ -22,7 +22,7 @@
     .withZone(ZoneId.of("Europe/London"))
 }
 
-@main(extraHeaders = Seq(Html("""<script src="/assets/javascripts/geoloc.js" defer></script>"""))) {
+@main(extraHeaders = Seq(Html(s"""<script src="${controllers.routes.Assets.versioned("javascripts/geoloc.js")}" defer></script>"""))) {
 
     <p class="govuk-body-l">
     @messages("homepage.intro")
