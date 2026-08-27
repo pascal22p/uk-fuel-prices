@@ -1,10 +1,10 @@
 package jobs
 
 import config.AppConfig
+import models.LoggingWithRequest
 
 import javax.inject.{Inject, Singleton}
 import org.apache.pekko.actor.{ActorRef, ActorSystem, Props}
-import play.api.Logging
 import play.api.db.Database
 
 import scala.concurrent.duration.*
@@ -18,7 +18,7 @@ class JobScheduler @Inject() (
                                    appConfig: AppConfig,
                                    fuelPriceService: FuelPriceService,
                                    db: Database
-                                 ) extends Logging {
+                                 ) extends LoggingWithRequest {
 
   import actorSystem.dispatcher
 

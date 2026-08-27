@@ -44,11 +44,13 @@ class HomeController @Inject()(
       totalFuelStations <- getSqlQueries.getTotalFuelStations
       totalFuelPrices <- getSqlQueries.getTotalFuelPrices
       lastUpdates <- fuelStationsService.getLatestFuelPricesWithStation(appConfig.maxCountForLastUpdatedPrices, geoloc)
+      cheapestPrices <- fuelStationsService.getCheapestPricesWithStation(appConfig.maxCountForLastUpdatedPrices, geoloc)
     } yield {
      Ok(homepageView(
        totalFuelStations,
        totalFuelPrices,
-       lastUpdates
+       lastUpdates,
+       cheapestPrices
      ))
     }
   }

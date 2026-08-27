@@ -95,7 +95,7 @@ class FuelPriceConnector @Inject()(
             .as[Seq[JsValue]]
             .zipWithIndex
             .flatMap { case (item, index) =>
-              item.validate[FuelPriceForStation].fold(
+              item.validate[FuelPriceForStation](using FuelPriceForStation.fuelPriceForStationReads(appConfig.apiDateFilter)).fold(
                 errors => {
                   logger.error(s"Failed at index $index: $errors")
                   None

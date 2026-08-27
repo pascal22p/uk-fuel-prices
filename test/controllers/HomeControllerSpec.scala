@@ -1,7 +1,7 @@
 package controllers
 
 import config.AppConfig
-import models.{FuelPrice, FuelPriceForStation, FuelType, GeoLoc}
+import models.{FuelPrice, FuelType, GeoLoc}
 import org.mockito.ArgumentMatchers.any
 import testUtils.{BaseSpec, FakeAuthAction}
 import play.api.test.Helpers.*
@@ -49,6 +49,13 @@ class HomeControllerSpec extends BaseSpec {
         )))
       )
 
+      when(mockFuelStationsService.getCheapestPricesWithStation(any(), any())).thenReturn(
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        )))
+      )
+
       val result = sut.index().apply(FakeRequest())
 
       status(result) mustBe OK
@@ -63,6 +70,12 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        )))
+      )
+      when(mockFuelStationsService.getCheapestPricesWithStation(any(), any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(
           nodeId = "1",
           fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
@@ -93,6 +106,12 @@ class HomeControllerSpec extends BaseSpec {
           fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
+      when(mockFuelStationsService.getCheapestPricesWithStation(any(), any())).thenReturn(
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        )))
+      )
 
       val result = sut.index().apply(FakeRequest(GET, "/?loc=51.5,0.1"))
 
@@ -118,6 +137,12 @@ class HomeControllerSpec extends BaseSpec {
           fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
         )))
       )
+      when(mockFuelStationsService.getCheapestPricesWithStation(any(), any())).thenReturn(
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        )))
+      )
 
       val result = sut.index().apply(FakeRequest(GET, "/?loc=notanumber"))
 
@@ -138,6 +163,12 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
+        Future.successful(Seq(fakeFuelStationWithPrices(
+          nodeId = "1",
+          fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))
+        )))
+      )
+      when(mockFuelStationsService.getCheapestPricesWithStation(any(), any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(
           nodeId = "1",
           fuelPrices = Seq(FuelPrice(2.0, FuelType.E10, Instant.now, Instant.now))

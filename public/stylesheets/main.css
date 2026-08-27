@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
 :root {
-    --govuk-colour-black: #0b0c0c;
+    --govuk-colour-black: #0a1216;
     --govuk-colour-white: #ffffff;
     --govuk-colour-blue: #003d5b;
     --govuk-colour-light-blue: #00527a;
-    --govuk-colour-dark-blue: #002333;
-    --govuk-colour-green: #00843d;
-    --govuk-colour-light-green: #00703c;
+    --govuk-colour-dark-blue: #001f30;
+    --govuk-colour-green: #2f86c9;
+    --govuk-colour-light-green: #0a4d78;
     --govuk-colour-red: #d4351c;
     --govuk-colour-yellow: #ffdd00;
-    --govuk-colour-grey-1: #f8f8f8;
-    --govuk-colour-grey-2: #dee0e2;
-    --govuk-colour-grey-3: #b1b4b6;
-    --govuk-colour-grey-4: #505a5f;
+    --govuk-colour-grey-1: #f4f7f9;
+    --govuk-colour-grey-2: #d9e1e6;
+    --govuk-colour-grey-3: #9fadb5;
+    --govuk-colour-grey-4: #4c5a62;
 }
 
 * {

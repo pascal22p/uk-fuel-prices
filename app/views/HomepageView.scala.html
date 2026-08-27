@@ -12,7 +12,8 @@
 @(
         totalFuelStations: Int,
         totalFuelPrices: Int,
-        fuelPricesForStations: Seq[FuelStationWithPrices]
+        fuelPricesForStations: Seq[FuelStationWithPrices],
+        cheapestPricesForStations: Seq[FuelStationWithPrices]
 )(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
 
 @dateFormatter = @{
@@ -55,17 +56,102 @@
 
     <hr class="govuk-section-break govuk-section-break--visible govuk-section-break--l">
 
+
+
+
+    <h2 class="govuk-heading-l">
+    @messages("homepage.cheapestPrice")
+    </h2>
+    <p class="govuk-body-m">
+        <button
+        type="button"
+        class="govuk-button"
+        id="use-my-location-a"
+        hidden>
+        @messages("homepage.useMyLocation")
+        </button>
+    </p>
+
+    @if(cheapestPricesForStations.isEmpty) {
+
+        <p class="govuk-body">
+        @messages("homepage.noFuelPrices")
+        </p>
+
+    } else {
+
+        @for(station <- cheapestPricesForStations) {
+
+            @govukSummaryList(
+                SummaryList(
+                    card = Some(
+                        Card(
+                            title = Some(
+                                CardTitle(
+                                    content = Text(station.tradingName)
+                                )
+                            ),
+                            actions = Some(
+                                Actions(
+                                    items = Seq(
+                                        ActionItem(
+                                            href = controllers.routes.HomeController.fuelStationDetails(station.nodeId).url,
+                                            content = Text(messages("homepage.viewDetails")),
+                                            visuallyHiddenText = Some(station.tradingName)
+                                        )
+                                    )
+                                )
+                            )
+                        )
+                    ),
+                    rows =
+                        Seq(
+                            SummaryListRow(
+                                key = Key(
+                                    content = Text(messages("homepage.address"))
+                                ),
+                                value = Value(
+                                    content = HtmlContent(
+                                        station.location.htmlAddress
+                                    )
+                                )
+                            )
+                        ) ++ station.fuelPrices.map { price =>
+                            SummaryListRow(
+                                key = Key(
+                                    content = Text(price.fuelType.toString)
+                                ),
+                                value = Value(
+                                    content = HtmlContent(
+                                        s"""
+                                <strong>${f"${price.price}%.1fp"}</strong>
+                                (${dateFormatter.format(price.priceLastUpdated)})
+                                """
+                                    )
+                                )
+                            )
+                        }
+                )
+            )
+        }
+
+    }
+
+
+
+
+
     <h2 class="govuk-heading-l">
     @messages("homepage.recentlyUpdatedPrices")
     </h2>
     <p class="govuk-body-m">
-
-        <a href="#"
-        class="govuk-link"
-        id="use-my-location"
+        <button
+        type="button"
+        class="govuk-button"
+        id="use-my-location-b"
         hidden>
         @messages("homepage.useMyLocation")
-        </a>
+        </button>
     </p>
 
     @if(fuelPricesForStations.isEmpty) {
@@ -121,8 +207,7 @@
                                     content = HtmlContent(
                                         s"""
                                 <strong>${f"${price.price}%.1fp"}</strong>
-                                <br>
-                                ${dateFormatter.format(price.priceLastUpdated)}
+                                (${dateFormatter.format(price.priceLastUpdated)})
                                 """
                                     )
                                 )

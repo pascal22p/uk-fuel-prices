@@ -1,7 +1,7 @@
 package models
 
 import anorm.RowParser
-import play.api.libs.json.{JsPath, Reads}
+import play.api.libs.json.{JsPath, JsonValidationError, Reads}
 import play.api.libs.functional.syntax.*
 import anorm.*
 import anorm.SqlParser.*
@@ -27,11 +27,13 @@ final case class FuelPrice(
 
 object FuelPrice {
   @SuppressWarnings(Array("org.wartremover.warts.EnumValueOf"))
-  implicit val fuelPriceReads: Reads[FuelPrice] = (
+  def fuelPriceReads(minValidDate: Instant): Reads[FuelPrice] = (
     (JsPath \ "price").read[Double] and
       (JsPath \ "fuel_type").read[String].map(s => FuelType.valueOf(s)) and
-      (JsPath \ "price_last_updated").read[Instant] and
+      (JsPath \ "price_last_updated").read[Instant]
+        .filter(JsonValidationError("error.instant.tooOld"))(_.isAfter(minValidDate)) and
       (JsPath \ "price_change_effective_timestamp").read[Instant]
+        .filter(JsonValidationError("error.instant.tooOld"))(_.isAfter(minValidDate))
     )(FuelPrice.apply)
 
   @SuppressWarnings(Array("org.wartremover.warts.EnumValueOf"))
@@ -44,22 +46,4 @@ object FuelPrice {
     case price ~ fuelType ~ priceLastUpdated ~ priceChangeEffectiveTimestamp =>
       FuelPrice(price, FuelType.valueOf(fuelType), priceLastUpdated, priceChangeEffectiveTimestamp)
   }
-  
-  @SuppressWarnings(Array("org.wartremover.warts.EnumValueOf"))
-  val fuelPriceWithStationInfoParser: RowParser[(String, String, Option[String], Option[String], Option[String], Option[String], FuelPrice)] = (
-      get[String]("nodeId") ~
-      get[String]("tradingName") ~
-      get[Option[String]]("addressLine1") ~
-      get[Option[String]]("addressLine2") ~
-      get[Option[String]]("city") ~
-      get[Option[String]]("postcode") ~
-      get[Double]("price") ~
-      get[String]("fuelType") ~
-      get[Instant]("priceLastUpdated") ~
-      get[Instant]("priceChangeEffectiveTimestamp")
-    ).map {
-    case nodeId ~ tradingName ~ addressLine1 ~ addressLine2 ~ city ~ postcode ~ price ~ fuelType ~ priceLastUpdated ~ priceChangeEffectiveTimestamp =>
-      (nodeId, tradingName, addressLine1, addressLine2, city, postcode, FuelPrice(price, FuelType.valueOf(fuelType), priceLastUpdated, priceChangeEffectiveTimestamp))
-  }
-  
 }
