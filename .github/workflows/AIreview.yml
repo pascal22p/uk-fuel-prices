@@ -23,7 +23,8 @@ jobs:
     with:
       run_id: ${{ github.event.workflow_run.id }}
       model: "gpt-oss-120b"
-      reasoning_effort: "medium"
+      reasoning_effort: "high"
+      temperature: "0.0"
     secrets:
       OVH_AI_ENDPOINTS_API_KEY: ${{ secrets.OVH_AI_ENDPOINTS_API_KEY }}
 
