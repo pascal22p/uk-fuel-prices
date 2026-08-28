@@ -30,7 +30,7 @@ class HomeController @Inject()(
     val geoloc = authenticatedRequest.queryString.get("loc")
       .flatMap(_.headOption)
       .flatMap { locString =>
-        val pattern = "([-0-9.]+)[^0-9-.]([-0-9.]+)".r
+        val pattern = "([-0-9.]+),([-0-9.]+)".r
         locString match {
           case pattern(lat, long) =>
             for {
