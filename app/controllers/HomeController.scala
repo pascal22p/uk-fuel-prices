@@ -59,7 +59,7 @@ class HomeController @Inject()(
     val nodeIdRegex = "^[0-9a-fA-F]{64}$".r
 
     if(nodeIdRegex.matches(nodeId)) {
-      getSqlQueries.getFuelStation(nodeId).map {
+      fuelStationsService.getFuelStationWithLatestPrices(nodeId).map {
         case None => NotFound(s"The nodeId $nodeId was not found")
         case Some(station) => Ok(stationView(station))
       }

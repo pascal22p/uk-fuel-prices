@@ -298,6 +298,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     db.withConnection { implicit conn =>
       SQL(
         """SELECT fp.*, ft.name AS fuelType, fs.tradingName AS tradingName, HEX(fp.nodeId_bin) as nodeId,
+          | fs.temporaryClosure as temporaryClosure, fs.permanentClosure as permanentClosure, fs.isMotorwayServiceStation as isMotorwayServiceStation, fs.isSupermarketServiceStation as isSupermarketServiceStation,
           | fs.addressLine1 as addressLine1, fs.addressLine2 as addressLine2, fs.city as city, fs.postcode as postcode
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id

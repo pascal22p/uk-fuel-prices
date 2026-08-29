@@ -1,10 +1,9 @@
 @import uk.gov.hmrc.govukfrontend.views.Implicits.*
-@import uk.gov.hmrc.govukfrontend.views.html.components.GovukTable
-@import models.FuelStation
+@import models.FuelStationWithPrices
 
-@this(main: Main)
+@this(main: Main, govukTable: GovukTable)
 
-@(station: FuelStation)(implicit request: AuthenticatedRequest[?], messages: Messages)
+@(station: FuelStationWithPrices)(implicit request: AuthenticatedRequest[?], messages: Messages)
 
 @headers = @{
     Seq(
@@ -17,8 +16,57 @@
 
 @main(caption = Some(s"${station.tradingName}"), extraHeaders = headers) {
 
+    @if(station.permanentClosure.contains(true)) {
+        <div class="govuk-notification-banner govuk-notification-banner--warning" role="alert">
+            <div class="govuk-notification-banner__header">
+                <h2 class="govuk-notification-banner__title">
+                    Important
+                </h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-notification-banner__heading">
+                    This fuel station is permanently closed.
+                </p>
+            </div>
+        </div>
+    } else if(station.temporaryClosure.contains(true)) {
+    <div class="govuk-notification-banner govuk-notification-banner--warning" role="alert">
+        <div class="govuk-notification-banner__header">
+            <h2 class="govuk-notification-banner__title">
+                Important
+            </h2>
+        </div>
+        <div class="govuk-notification-banner__content">
+            <p class="govuk-notification-banner__heading">
+                This fuel station is temporarily closed.
+            </p>
+        </div>
+    </div>
+    }
+
+    <h2 class="govuk-heading-m">Address</h2>
     <p class="govuk-body">@station.location.fullAddress</p>
 
+    @if(station.fuelPrices.nonEmpty) {
+        <h2 class="govuk-heading-m">Current fuel prices</h2>
+
+        @govukTable(Table(
+            head = Some(Seq(
+                HeadCell(Text("Fuel type")),
+                HeadCell(Text("Price")),
+                HeadCell(Text("Updated"))
+            )),
+            rows = station.fuelPrices.map { fuelPrice =>
+                Seq(
+                    TableRow(content = Text(fuelPrice.fuelType.displayText)),
+                    TableRow(content = Text(s"${fuelPrice.price}p")),
+                    TableRow(content = Text(fuelPrice.formattedPriceLastUpdated))
+                )
+            }
+        ))
+    }
+
+    <h2 class="govuk-heading-m">Location</h2>
     <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
         <div id="map"></div>
