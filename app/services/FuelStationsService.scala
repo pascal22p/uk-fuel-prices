@@ -87,4 +87,15 @@ class FuelStationsService @Inject()(
     }).getOrElseF(getSqlQueries.getCheapestFuelPricesWithStation(numberOfResult, Seq.empty))
   }
 
+  def getFuelStationWithLatestPrices(nodeId: String): Future[Option[FuelStationWithPrices]] = {
+    getSqlQueries.findPricesForStation(nodeId).map { stations =>
+      stations.headOption.map { station =>
+        val latestPrices = station.fuelPrices.groupBy(_.fuelType).map { case (_, prices) =>
+          prices.maxBy(_.priceLastUpdated)
+        }.toSeq
+        station.copy(fuelPrices = latestPrices)
+      }
+    }
+  }
+
 }
