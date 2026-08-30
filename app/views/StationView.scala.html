@@ -73,7 +73,7 @@
             )),
             rows = station.fuelPrices.map { fuelPrice =>
                 Seq(
-                    TableRow(content = Text(messages(fuelPrice.fuelType.toString))),
+                    TableRow(content = Text(messages(s"fuelType.${fuelPrice.fuelType.toString}"))),
                     TableRow(content = Text(s"${fuelPrice.price}p")),
                     TableRow(content = Text(fuelPrice.formattedPriceLastUpdated))
                 )

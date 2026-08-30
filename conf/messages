@@ -52,3 +52,5 @@ station.fuelType = Fuel type
 station.fuelPrice = Fuel price
 station.updated = Last updated
 station.priceHistory = Price history
+station.currentPrices = Current prices
+station.price = Price (pence)
