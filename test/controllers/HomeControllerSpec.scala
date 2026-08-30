@@ -8,7 +8,7 @@ import play.api.test.Helpers.*
 import queries.GetSqlQueries
 import views.html.{HomepageView, StationView}
 import play.api.test.FakeRequest
-import org.mockito.Mockito.{reset, verify, when}
+import org.mockito.Mockito.{never, reset, verify, when}
 import services.FuelStationsService
 
 import java.time.Instant
@@ -183,6 +183,72 @@ class HomeControllerSpec extends BaseSpec {
       val geoLocCaptor = org.mockito.ArgumentCaptor.forClass(classOf[Option[GeoLoc]])
       verify(mockFuelStationsService).getLatestFuelPricesWithStation(any(), geoLocCaptor.capture())
       geoLocCaptor.getValue mustBe None
+    }
+  }
+
+  "fuelStationDetails" must {
+
+    "return 404 when a valid nodeId does not have a fuel station" in {
+      val nodeId =
+        "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+
+      when(mockFuelStationsService.getFuelStationWithLatestPrices(nodeId))
+        .thenReturn(Future.successful(None))
+
+      val result = sut
+        .fuelStationDetails(nodeId)
+        .apply(FakeRequest(GET, s"/fuel-stations/$nodeId"))
+
+      status(result) mustBe NOT_FOUND
+      contentAsString(result) mustBe s"The nodeId $nodeId was not found"
+
+      verify(mockFuelStationsService)
+        .getFuelStationWithLatestPrices(nodeId)
+    }
+
+    "return 400 when the nodeId is invalid" in {
+      val nodeId = "not-a-valid-node-id"
+
+      val result = sut
+        .fuelStationDetails(nodeId)
+        .apply(FakeRequest(GET, s"/fuel-stations/$nodeId"))
+
+      status(result) mustBe BAD_REQUEST
+      contentAsString(result) mustBe
+        s"The nodeId $nodeId is not a valid nodeId"
+
+      verify(mockFuelStationsService, never())
+        .getFuelStationWithLatestPrices(any[String])
+    }
+
+    "return 200 and render the station when a valid nodeId is found" in {
+      val nodeId =
+        "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+
+      val station = fakeFuelStationWithPrices(
+        nodeId = nodeId,
+        fuelPrices = Seq(
+          FuelPrice(
+            145.0,
+            FuelType.E10,
+            Instant.parse("2024-01-01T00:00:00Z"),
+            Instant.parse("2024-01-01T00:00:00Z")
+          )
+        )
+      )
+
+      when(mockFuelStationsService.getFuelStationWithLatestPrices(nodeId))
+        .thenReturn(Future.successful(Some(station)))
+
+      val result = sut
+        .fuelStationDetails(nodeId)
+        .apply(FakeRequest(GET, s"/fuel-stations/$nodeId"))
+
+      status(result) mustBe OK
+      contentAsString(result) must include(station.tradingName)
+
+      verify(mockFuelStationsService)
+        .getFuelStationWithLatestPrices(nodeId)
     }
   }
 }

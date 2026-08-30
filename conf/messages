@@ -1,5 +1,16 @@
 # https://www.playframework.com/documentation/latest/ScalaI18N
 
+Important = Important
+Address = Address
+Location = Location
+
+fuelType.B7_PREMIUM = Diesel premium
+fuelType.B7_STANDARD = Diesel standard
+fuelType.B10 = Diesel B10
+fuelType.HVO = HVO
+fuelType.E10 = Petrol E10
+fuelType.E5 = Petrol E5
+
 h1.title=Fuel prices
 
 input.postcode.title=Search fuel stations around a postcode
@@ -33,3 +44,11 @@ homepage.viewDetails = View details
 homepage.intro = Compare fuel prices at stations near you, updated regularly throughout the day.
 homepage.overview = Overview
 homepage.cheapestPrice = Cheapest price
+
+station.permanentClosure = This fuel station is permanently closed.
+station.temporaryClosure = This fuel station is temporarily closed.
+station.currentlyClosed = Current fuel prices
+station.fuelType = Fuel type
+station.fuelPrice = Fuel price
+station.updated = Last updated
+station.priceHistory = Price history

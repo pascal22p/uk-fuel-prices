@@ -271,4 +271,96 @@ class FuelStationsServiceSpec extends BaseSpec {
       actualBoundingBox.maxLon mustBe expectedBoundingBox.maxLon
     }
   }
+
+  "getFuelStationWithLatestPrices" must {
+
+    val station = fakeFuelStationWithPrices(
+      nodeId = "station-1",
+      fuelPrices = Seq(
+        FuelPrice(
+          150.0,
+          FuelType.E10,
+          Instant.parse("2026-08-29T10:00:00Z"),
+          Instant.parse("2026-08-29T10:00:00Z")
+        ),
+        FuelPrice(
+          155.0,
+          FuelType.E10,
+          Instant.parse("2026-08-29T11:00:00Z"),
+          Instant.parse("2026-08-29T11:00:00Z")
+        ),
+        FuelPrice(
+          160.0,
+          FuelType.B7_PREMIUM,
+          Instant.parse("2026-08-29T09:00:00Z"),
+          Instant.parse("2026-08-29T09:00:00Z")
+        ),
+        FuelPrice(
+          158.0,
+          FuelType.B7_PREMIUM,
+          Instant.parse("2026-08-29T12:00:00Z"),
+          Instant.parse("2026-08-29T12:00:00Z")
+        )
+      )
+    )
+
+    "return the latest price for each fuel type" in {
+      when(mockGetSqlQueries.findPricesForStation("station-1"))
+        .thenReturn(Future.successful(Seq(station)))
+
+      val result = sut.getFuelStationWithLatestPrices("station-1").futureValue
+
+      result mustBe defined
+
+      val latestPrices = result.value.fuelPrices
+
+      latestPrices must contain theSameElementsAs Seq(
+        FuelPrice(
+          155.0,
+          FuelType.E10,
+          Instant.parse("2026-08-29T11:00:00Z"),
+          Instant.parse("2026-08-29T11:00:00Z")
+        ),
+        FuelPrice(
+          158.0,
+          FuelType.B7_PREMIUM,
+          Instant.parse("2026-08-29T12:00:00Z"),
+          Instant.parse("2026-08-29T12:00:00Z")
+        )
+      )
+
+      verify(mockGetSqlQueries).findPricesForStation("station-1")
+    }
+
+    "return None when no station is found" in {
+      when(mockGetSqlQueries.findPricesForStation("missing-station"))
+        .thenReturn(Future.successful(Seq.empty))
+
+      val result =
+        sut.getFuelStationWithLatestPrices("missing-station").futureValue
+
+      result mustBe None
+
+      verify(mockGetSqlQueries).findPricesForStation("missing-station")
+    }
+
+    "return the station with no prices when the station has no price data" in {
+      val stationWithoutPrices = fakeFuelStationWithPrices(
+        nodeId = "station-without-prices",
+        fuelPrices = Seq.empty
+      )
+
+      when(mockGetSqlQueries.findPricesForStation("station-without-prices"))
+        .thenReturn(Future.successful(Seq(stationWithoutPrices)))
+
+      val result =
+        sut.getFuelStationWithLatestPrices("station-without-prices").futureValue
+
+      result mustBe defined
+      result.value.nodeId mustBe "station-without-prices"
+      result.value.fuelPrices mustBe empty
+
+      verify(mockGetSqlQueries).findPricesForStation("station-without-prices")
+    }
+  }
 }
