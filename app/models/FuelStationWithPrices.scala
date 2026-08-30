@@ -48,6 +48,10 @@ object FuelStationWithPrices {
   val fuelPriceWithStationInfoParser: RowParser[FuelStationWithPrices] = (
     get[String]("nodeId") ~
       get[String]("tradingName") ~
+      get[Option[Boolean]]("temporaryClosure") ~
+      get[Option[Boolean]]("permanentClosure") ~
+      get[Option[Boolean]]("isMotorwayServiceStation") ~
+      get[Option[Boolean]]("isSupermarketServiceStation") ~
       get[Option[String]]("addressLine1") ~
       get[Option[String]]("addressLine2") ~
       get[Option[String]]("city") ~
@@ -57,9 +61,9 @@ object FuelStationWithPrices {
       get[Instant]("priceLastUpdated") ~
       get[Instant]("priceChangeEffectiveTimestamp")
     ).map {
-    case nodeId ~ tradingName ~ addressLine1 ~ addressLine2 ~ city ~ postcode ~ price ~ fuelType ~ priceLastUpdated ~ priceChangeEffectiveTimestamp =>
+    case nodeId ~ tradingName ~ temporaryClosure ~ permanentClosure ~ isMotorwayServiceStation ~ isSupermarketServiceStation ~ addressLine1 ~ addressLine2 ~ city ~ postcode ~ price ~ fuelType ~ priceLastUpdated ~ priceChangeEffectiveTimestamp =>
       FuelStationWithPrices(
-        nodeId, tradingName, None, "", None, None, None, None,
+        nodeId, tradingName, None, "", temporaryClosure, permanentClosure, isMotorwayServiceStation, isSupermarketServiceStation,
         FuelStationLocation(addressLine1, addressLine2, city.getOrElse(""), None, None, postcode.getOrElse(""), 0.0, 0.0),
         List.empty,
         Seq(FuelPrice(price, FuelType.valueOf(fuelType), priceLastUpdated, priceChangeEffectiveTimestamp)),

@@ -1,10 +1,9 @@
 @import uk.gov.hmrc.govukfrontend.views.Implicits.*
-@import uk.gov.hmrc.govukfrontend.views.html.components.GovukTable
-@import models.FuelStation
+@import models.FuelStationWithPrices
 
-@this(main: Main)
+@this(main: Main, govukTable: GovukTable)
 
-@(station: FuelStation)(implicit request: AuthenticatedRequest[?], messages: Messages)
+@(station: FuelStationWithPrices)(implicit request: AuthenticatedRequest[?], messages: Messages)
 
 @headers = @{
     Seq(
@@ -17,8 +16,72 @@
 
 @main(caption = Some(s"${station.tradingName}"), extraHeaders = headers) {
 
+    @if(station.permanentClosure.contains(true)) {
+        <div
+        class="govuk-notification-banner govuk-notification-banner--warning"
+        role="region"
+        aria-labelledby="govuk-notification-banner-title"
+        >
+            <div class="govuk-notification-banner__header">
+                <h2
+                class="govuk-notification-banner__title"
+                id="govuk-notification-banner-title"
+                >
+                @messages("Important")
+                </h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-notification-banner__heading">
+                @messages("station.permanentClosure")
+                </p>
+            </div>
+        </div>
+    } else if(station.temporaryClosure.contains(true)) {
+        <div
+        class="govuk-notification-banner govuk-notification-banner--warning"
+        role="region"
+        aria-labelledby="govuk-notification-banner-title"
+        >
+            <div class="govuk-notification-banner__header">
+                <h2
+                class="govuk-notification-banner__title"
+                id="govuk-notification-banner-title"
+                >
+                @messages("Important")
+                </h2>
+            </div>
+            <div class="govuk-notification-banner__content">
+                <p class="govuk-notification-banner__heading">
+                @messages("station.temporaryClosure")
+                </p>
+            </div>
+        </div>
+    }
+
+    <h2 class="govuk-heading-m">@messages("Address")</h2>
     <p class="govuk-body">@station.location.fullAddress</p>
 
+    @if(station.fuelPrices.nonEmpty) {
+        <h2 class="govuk-heading-m">@messages("station.currentPrices")</h2>
+
+        @govukTable(Table(
+            caption = None,
+            head = Some(Seq(
+                HeadCell(Text(messages("station.fuelType"))),
+                HeadCell(Text(messages("station.price"))),
+                HeadCell(Text(messages("station.updated")))
+            )),
+            rows = station.fuelPrices.map { fuelPrice =>
+                Seq(
+                    TableRow(content = Text(messages(s"fuelType.${fuelPrice.fuelType.toString}"))),
+                    TableRow(content = Text(f"${fuelPrice.price}%.1f")),
+                    TableRow(content = Text(fuelPrice.formattedPriceLastUpdated))
+                )
+            }
+        ))
+    }
+
+    <h2 class="govuk-heading-m">@messages("Location")</h2>
     <div class="govuk-grid-row">
     <div class="govuk-grid-column-two-thirds">
         <div id="map"></div>
@@ -52,7 +115,7 @@
 
     <div class="govuk-grid-row" style="margin-top: 20px">
     <div class="govuk-grid-column-two-thirds">
-        <h2 class="govuk-heading-m">Prices history</h2>
+        <h2 class="govuk-heading-m">@messages("station.priceHistory")</h2>
         <canvas id="fuelChart"></canvas>
     </div>
 
@@ -62,7 +125,7 @@
                     .then(series => {
 
                         const colors = [
-                            "#d4351c", // GOV.UK red
+                            "#d4351c", // red
                             "#1d70b8", // blue
                             "#00703c", // green
                             "#6f777b", // grey

@@ -121,6 +121,10 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |    fs.addressLine2,
            |    fs.city,
            |    fs.postcode,
+           |    fs.temporaryClosure,
+           |    fs.permanentClosure,
+           |    fs.isMotorwayServiceStation,
+           |    fs.isSupermarketServiceStation,
            |    ft.name AS fuelType,
            |    l.price,
            |    l.priceChangeEffectiveTimestamp,
@@ -224,6 +228,10 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |    fs.addressLine2,
            |    fs.city,
            |    fs.postcode,
+           |    fs.temporaryClosure,
+           |    fs.permanentClosure,
+           |    fs.isMotorwayServiceStation,
+           |    fs.isSupermarketServiceStation,
            |    ft.name AS fuelType,
            |    l.price,
            |    l.priceChangeEffectiveTimestamp,
@@ -298,6 +306,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     db.withConnection { implicit conn =>
       SQL(
         """SELECT fp.*, ft.name AS fuelType, fs.tradingName AS tradingName, HEX(fp.nodeId_bin) as nodeId,
+          | fs.temporaryClosure as temporaryClosure, fs.permanentClosure as permanentClosure, fs.isMotorwayServiceStation as isMotorwayServiceStation, fs.isSupermarketServiceStation as isSupermarketServiceStation,
           | fs.addressLine1 as addressLine1, fs.addressLine2 as addressLine2, fs.city as city, fs.postcode as postcode
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
@@ -315,6 +324,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     val rows = db.withConnection { implicit conn =>
       SQL(
         """SELECT fp.*, fs.tradingName AS tradingName, ft.name AS fuelType, HEX(fp.nodeId_bin) as nodeId,
+          | fs.temporaryClosure as temporaryClosure, fs.permanentClosure as permanentClosure, fs.isMotorwayServiceStation as isMotorwayServiceStation, fs.isSupermarketServiceStation as isSupermarketServiceStation,
           | fs.addressLine1 as addressLine1, fs.addressLine2 as addressLine2, fs.city as city, fs.postcode as postcode
           |FROM fuel_prices fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
