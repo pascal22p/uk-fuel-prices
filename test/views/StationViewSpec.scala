@@ -93,5 +93,17 @@ class StationViewSpec extends BaseSpec {
         "This fuel station is temporarily closed."
         )
     }
+
+    "not render the map when the station has no location" in {
+      val station = fakeStation().copy(
+        location = fakeFuelStationLocation(location = None)
+      )
+
+      val html = contentAsString(
+        stationView(station)
+      )
+
+      html must not include """id="map""""
+    }
   }
 }

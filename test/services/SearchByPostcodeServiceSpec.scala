@@ -205,5 +205,30 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
       actualBoundingBox.minLon mustBe expectedBoundingBox.minLon
       actualBoundingBox.maxLon mustBe expectedBoundingBox.maxLon
     }
+
+    "set distance to zero for a station with no location returned with prices" in {
+      when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
+        EitherT.rightT[Future, UpstreamErrorResponse](geoLoc)
+      )
+
+      when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
+        Future.successful(Seq(nearStation))
+      )
+
+      val stationWithoutLocation = fakeFuelStationWithPrices(
+        nodeId = "nearNodeId",
+        location = fakeFuelStationLocation(location = None),
+        fuelPrices = List(nearStationPrice)
+      )
+
+      when(mockGetSqlQueries.findPricesForStations(Seq("nearNodeId"))).thenReturn(
+        Future.successful(Seq(stationWithoutLocation))
+      )
+
+      val result =
+        sut.getViewModel(postcode, FuelType.E10, radiusMiles).value.futureValue
+
+      result.toOption.get.fuelStationWithPrices.head.distance mustBe 0.0
+    }
   }
 }
