@@ -2,7 +2,7 @@ package services
 
 import cats.data.EitherT
 import connectors.PostcodesIOConnector
-import models.{FuelPrice, FuelStationWithPrices, FuelType, GeoLoc, SearchByPostcodeViewModel}
+import models.{FuelPrice, FuelType, GeoLoc, SearchByPostcodeViewModel}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, times, verify, when}
 import queries.GetSqlQueries
@@ -39,7 +39,12 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
   )
   val now = Instant.now
   val nearStationPrice = FuelPrice(140.0, FuelType.E10, now, now)
-  val nearStationWithPrice = FuelStationWithPrices(nearStation, List(nearStationPrice), 1000.0)
+  val nearStationWithPrice = fakeFuelStationWithPrices(
+    nodeId = "nearNodeId",
+    location = fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13))),
+    fuelPrices = List(nearStationPrice),
+    distance = 1000.0
+  )
 
   "getViewModel" must {
 
@@ -87,7 +92,12 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
 
     "return a view model containing the station with an empty fuelPrices list when the station has prices but none match the requested fuel type" in {
       val wrongFuelTypePrice = FuelPrice(155.9, FuelType.B7_STANDARD, now, now)
-      val nearStationWithPrice = FuelStationWithPrices(nearStation, List(wrongFuelTypePrice), 1000.0)
+      val nearStationWithPrice = fakeFuelStationWithPrices(
+        nodeId = "nearNodeId",
+        location = fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13))),
+        fuelPrices = List(wrongFuelTypePrice),
+        distance = 1000.0
+      )
 
       when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](geoLoc)

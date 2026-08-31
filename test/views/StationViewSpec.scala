@@ -8,7 +8,7 @@ import views.html.StationView
 import play.api.test.Helpers.*
 import play.api.i18n.{Lang, Messages, MessagesApi, MessagesImpl}
 
-import java.time.{Instant, LocalDateTime}
+import java.time.LocalDateTime
 
 class StationViewSpec extends BaseSpec {
 
@@ -25,33 +25,9 @@ class StationViewSpec extends BaseSpec {
                    temporaryClosure: Option[Boolean] = None,
                    permanentClosure: Option[Boolean] = None
                  ): FuelStationWithPrices =
-    FuelStationWithPrices(
-      nodeId =
-        "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711",
-      tradingName = "Test Fuel Station",
-      isSameTradingAndBrandName = None,
-      brandName = "",
+    fakeFuelStationWithPrices(
       temporaryClosure = temporaryClosure,
-      permanentClosure = permanentClosure,
-      isMotorwayServiceStation = None,
-      isSupermarketServiceStation = None,
-      location = fakeFuelStationLocation(
-        city = "London",
-        country = None,
-        postcode = "SW1A 1AA"
-      ),
-      fuelTypes = List.empty,
-      fuelPrices = Seq(
-        FuelPrice(
-          price = 1.45,
-          fuelType = FuelType.E10,
-          priceLastUpdated =
-            Instant.parse("2024-01-01T00:00:00Z"),
-          priceChangeEffectiveTimestamp =
-            Instant.parse("2024-01-01T00:00:00Z")
-        )
-      ),
-      distance = 0.0
+      permanentClosure = permanentClosure
     )
 
   "StationView" must {
