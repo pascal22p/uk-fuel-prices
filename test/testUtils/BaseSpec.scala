@@ -10,7 +10,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Injecting
 import java.time.Instant
-import models.{GeoLoc, FuelStationLocation, FuelStationWithPrices, FuelPrice, FuelType}
+import models.{GeoLoc, FuelStation, FuelStationLocation, FuelStationWithPrices, FuelPrice, FuelType}
 
 trait BaseSpec
     extends PlaySpec
@@ -49,6 +49,31 @@ trait BaseSpec
       county = county,
       postcode = postcode,
       location = location
+    )
+
+  def fakeFuelStation(
+                       nodeId: String = "b739362af81acc9fec9eda6f155348125fa2d5c1772c96bf6855a1bad0179711",
+                       tradingName: String = "Test Fuel Station",
+                       isSameTradingAndBrandName: Option[Boolean] = Some(true),
+                       brandName: String = "Test Brand",
+                       temporaryClosure: Option[Boolean] = Some(false),
+                       permanentClosure: Option[Boolean] = Some(false),
+                       isMotorwayServiceStation: Option[Boolean] = Some(false),
+                       isSupermarketServiceStation: Option[Boolean] = Some(false),
+                       location: FuelStationLocation = fakeFuelStationLocation(),
+                       fuelTypes: List[String] = List("PETROL", "DIESEL")
+                     ): FuelStation =
+    FuelStation(
+      nodeId = nodeId,
+      tradingName = tradingName,
+      isSameTradingAndBrandName = isSameTradingAndBrandName,
+      brandName = brandName,
+      temporaryClosure = temporaryClosure,
+      permanentClosure = permanentClosure,
+      isMotorwayServiceStation = isMotorwayServiceStation,
+      isSupermarketServiceStation = isSupermarketServiceStation,
+      location = location,
+      fuelTypes = fuelTypes
     )
 
   def fakeFuelStationWithPrices(

@@ -1,7 +1,7 @@
 package services
 
 import connectors.FuelPriceConnector
-import models.{FuelPrice, FuelStation, FuelType, GeoLoc}
+import models.{FuelPrice, FuelType, GeoLoc}
 import queries.GetSqlQueries
 import testUtils.BaseSpec
 import uk.gov.hmrc.http.HeaderCarrier
@@ -32,16 +32,14 @@ class FuelStationsServiceSpec extends BaseSpec {
     val geoLoc = GeoLoc(51.5074, -0.1278)
     val radiusMiles = 10
 
-    val nearStation = FuelStation(
-      "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
-      fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13))), // ~1km away
-      List.empty
+    val nearStation = fakeFuelStation(
+      nodeId = "nearNodeId",
+      location = fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13)))
     )
 
-    val farStation = FuelStation(
-      "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
-      fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093))), // Sydney
-      List.empty
+    val farStation = fakeFuelStation(
+      nodeId = "farNodeId",
+      location = fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093)))
     )
 
     "return prices for stations within the actual geodesic radius when geoloc is provided" in {
@@ -153,16 +151,14 @@ class FuelStationsServiceSpec extends BaseSpec {
     val geoLoc = GeoLoc(51.5074, -0.1278)
     val radiusMiles = 10
 
-    val nearStation = FuelStation(
-      "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
-      fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13))), // ~1km away
-      List.empty
+    val nearStation = fakeFuelStation(
+      nodeId = "nearNodeId",
+      location = fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13)))
     )
 
-    val farStation = FuelStation(
-      "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
-      fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093))), // Sydney
-      List.empty
+    val farStation = fakeFuelStation(
+      nodeId = "farNodeId",
+      location = fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093)))
     )
 
     "return prices for stations within the actual geodesic radius when geoloc is provided" in {

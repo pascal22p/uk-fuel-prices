@@ -2,7 +2,7 @@ package services
 
 import cats.data.EitherT
 import connectors.PostcodesIOConnector
-import models.{FuelPrice, FuelStation, FuelStationWithPrices, FuelType, GeoLoc, SearchByPostcodeViewModel}
+import models.{FuelPrice, FuelStationWithPrices, FuelType, GeoLoc, SearchByPostcodeViewModel}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{reset, times, verify, when}
 import queries.GetSqlQueries
@@ -29,15 +29,13 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
   val postcode = "SW1A 1AA"
   val geoLoc = GeoLoc(51.5074, -0.1278) // London
   val radiusMiles = 10.0
-  val farStation = FuelStation(
-    "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
-    fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093))), // Sydney
-    List.empty
+  val farStation = fakeFuelStation(
+    nodeId = "farNodeId",
+    location = fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093))) // Sydney
   )
-  val nearStation = FuelStation(
-    "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
-    fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13))), // ~1km away
-    List.empty
+  val nearStation = fakeFuelStation(
+    nodeId = "nearNodeId",
+    location = fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13))) // ~1km away
   )
   val now = Instant.now
   val nearStationPrice = FuelPrice(140.0, FuelType.E10, now, now)

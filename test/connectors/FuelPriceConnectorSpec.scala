@@ -8,7 +8,7 @@ import play.api.inject.bind
 import play.api.inject.guice.GuiceApplicationBuilder
 import testUtils.{BaseSpec, WireMockHelper}
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
-import models.{FuelPrice, FuelPriceForStation, FuelStation}
+import models.{FuelPrice, FuelPriceForStation}
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{doNothing, times, verify, when}
 import play.api.libs.json.{JsResultException, Json}
@@ -324,9 +324,9 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       result mustBe
         Right(List(
-          FuelStation("9B275AB576EEBA3C6677984BE15EE22A74E54FDFE8E5EA700E84A03178DC4AC1", "TEST", Some(true), "TEST", Some(false), Some(false), Some(false), Some(false), fakeFuelStationLocation(addressLine1 = Some("address line 1"), country = Some("England"), postcode = "post code", location = Some(GeoLoc(51.5268585, -0.700361))), List("E10", "E5", "HVO", "B10")),
-          FuelStation("4FD9A4C6B48358B9B5C95989FBA100FDCBB87C9E909ED4CE1AD96F64FFB8B56A", "TEST FORECOURT 1", Some(true), "Brand name", Some(false), None, Some(false), Some(false), fakeFuelStationLocation(addressLine1 = Some("address line different"), addressLine2 = Some(""), city = "City again", country = Some("ENGLAND"), county = Some("EAST YORKSHIRE"), postcode = "post code", location = Some(GeoLoc(51.258503, -3.417567))), List("B10")),
-          FuelStation("91BDDA1C07FA05110A31639CC66932F9ED8BD388D4F6BE542A423365BCFD53E1", "trading name", Some(true), "brand name again", Some(false), None, Some(false), Some(false), fakeFuelStationLocation(addressLine1 = Some("address line 3"), addressLine2 = Some("second address line"), city = "City 3", country = Some("ENGLAND"), county = Some("LEICESTERSHIRE"), postcode = "postcode 5", location = Some(GeoLoc(50.503343, -2.12444))), List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
+          fakeFuelStation(nodeId = "9B275AB576EEBA3C6677984BE15EE22A74E54FDFE8E5EA700E84A03178DC4AC1", tradingName = "TEST", brandName = "TEST", location = fakeFuelStationLocation(addressLine1 = Some("address line 1"), country = Some("England"), postcode = "post code", location = Some(GeoLoc(51.5268585, -0.700361))), fuelTypes = List("E10", "E5", "HVO", "B10")),
+          fakeFuelStation(nodeId = "4FD9A4C6B48358B9B5C95989FBA100FDCBB87C9E909ED4CE1AD96F64FFB8B56A", tradingName = "TEST FORECOURT 1", brandName = "Brand name", permanentClosure = None, location = fakeFuelStationLocation(addressLine1 = Some("address line different"), addressLine2 = Some(""), city = "City again", country = Some("ENGLAND"), county = Some("EAST YORKSHIRE"), postcode = "post code", location = Some(GeoLoc(51.258503, -3.417567))), fuelTypes = List("B10")),
+          fakeFuelStation(nodeId = "91BDDA1C07FA05110A31639CC66932F9ED8BD388D4F6BE542A423365BCFD53E1", tradingName = "trading name", brandName = "brand name again", permanentClosure = None, location = fakeFuelStationLocation(addressLine1 = Some("address line 3"), addressLine2 = Some("second address line"), city = "City 3", country = Some("ENGLAND"), county = Some("LEICESTERSHIRE"), postcode = "postcode 5", location = Some(GeoLoc(50.503343, -2.12444))), fuelTypes = List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
         ))
     }
 
@@ -345,8 +345,8 @@ class FuelPriceConnectorSpec extends BaseSpec with WireMockHelper {
 
       result mustBe
         Right(List(
-          FuelStation("4FD9A4C6B48358B9B5C95989FBA100FDCBB87C9E909ED4CE1AD96F64FFB8B56A", "TEST FORECOURT 1", Some(true), "Brand name", Some(false), None, Some(false), Some(false), fakeFuelStationLocation(addressLine1 = Some("address line different"), addressLine2 = Some(""), city = "City again", country = Some("ENGLAND"), county = Some("EAST YORKSHIRE"), postcode = "post code", location = Some(GeoLoc(51.258503, -3.417567))), List("B10")),
-          FuelStation("91BDDA1C07FA05110A31639CC66932F9ED8BD388D4F6BE542A423365BCFD53E1", "trading name", Some(true), "brand name again", Some(false), None, Some(false), Some(false), fakeFuelStationLocation(addressLine1 = Some("address line 3"), addressLine2 = Some("second address line"), city = "City 3", country = Some("ENGLAND"), county = Some("LEICESTERSHIRE"), postcode = "postcode 5", location = Some(GeoLoc(50.503343, -2.12444))), List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
+          fakeFuelStation(nodeId = "4FD9A4C6B48358B9B5C95989FBA100FDCBB87C9E909ED4CE1AD96F64FFB8B56A", tradingName = "TEST FORECOURT 1", brandName = "Brand name", permanentClosure = None, location = fakeFuelStationLocation(addressLine1 = Some("address line different"), addressLine2 = Some(""), city = "City again", country = Some("ENGLAND"), county = Some("EAST YORKSHIRE"), postcode = "post code", location = Some(GeoLoc(51.258503, -3.417567))), fuelTypes = List("B10")),
+          fakeFuelStation(nodeId = "91BDDA1C07FA05110A31639CC66932F9ED8BD388D4F6BE542A423365BCFD53E1", tradingName = "trading name", brandName = "brand name again", permanentClosure = None, location = fakeFuelStationLocation(addressLine1 = Some("address line 3"), addressLine2 = Some("second address line"), city = "City 3", country = Some("ENGLAND"), county = Some("LEICESTERSHIRE"), postcode = "postcode 5", location = Some(GeoLoc(50.503343, -2.12444))), fuelTypes = List("E5", "HVO", "B10", "B7_PREMIUM", "B7_STANDARD"))
         ))
     }
 
