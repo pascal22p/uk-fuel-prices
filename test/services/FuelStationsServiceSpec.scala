@@ -1,7 +1,7 @@
 package services
 
 import connectors.FuelPriceConnector
-import models.{FuelPrice, FuelStation, FuelStationLocation, FuelType, GeoLoc}
+import models.{FuelPrice, FuelStation, FuelType, GeoLoc}
 import queries.GetSqlQueries
 import testUtils.BaseSpec
 import uk.gov.hmrc.http.HeaderCarrier
@@ -34,13 +34,13 @@ class FuelStationsServiceSpec extends BaseSpec {
 
     val nearStation = FuelStation(
       "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", Some(GeoLoc(51.51, -0.13))), // ~1km away
+      fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13))), // ~1km away
       List.empty
     )
 
     val farStation = FuelStation(
       "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", Some(GeoLoc(-33.8688, 151.2093))), // Sydney
+      fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093))), // Sydney
       List.empty
     )
 
@@ -155,13 +155,13 @@ class FuelStationsServiceSpec extends BaseSpec {
 
     val nearStation = FuelStation(
       "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", Some(GeoLoc(51.51, -0.13))), // ~1km away
+      fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13))), // ~1km away
       List.empty
     )
 
     val farStation = FuelStation(
       "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", Some(GeoLoc(-33.8688, 151.2093))), // Sydney
+      fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093))), // Sydney
       List.empty
     )
 

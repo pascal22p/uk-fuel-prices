@@ -35,14 +35,10 @@ class StationViewSpec extends BaseSpec {
       permanentClosure = permanentClosure,
       isMotorwayServiceStation = None,
       isSupermarketServiceStation = None,
-      location = FuelStationLocation(
-        addressLine1 = Some("123 Test Street"),
-        addressLine2 = None,
+      location = fakeFuelStationLocation(
         city = "London",
-        county = None,
         country = None,
-        postcode = "SW1A 1AA",
-        location = Some(GeoLoc(51.5014,-0.1419))
+        postcode = "SW1A 1AA"
       ),
       fuelTypes = List.empty,
       fuelPrices = Seq(

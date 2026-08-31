@@ -32,6 +32,25 @@ trait BaseSpec
 
   implicit override lazy val app: Application = localGuiceApplicationBuilder().build()
   
+  def fakeFuelStationLocation(
+                               addressLine1: Option[String] = Some("123 Test Street"),
+                               addressLine2: Option[String] = None,
+                               city: String = "City",
+                               country: Option[String] = Some("UK"),
+                               county: Option[String] = None,
+                               postcode: String = "postcode",
+                               location: Option[GeoLoc] = Some(GeoLoc(51.5014, -0.1419))
+                             ): FuelStationLocation =
+    FuelStationLocation(
+      addressLine1 = addressLine1,
+      addressLine2 = addressLine2,
+      city = city,
+      country = country,
+      county = county,
+      postcode = postcode,
+      location = location
+    )
+
   def fakeFuelStationWithPrices(
                                nodeId: String = "b739362af81acc9fec9eda6f155348125fa2d5c1772c96bf6855a1bad0179711",
                                tradingName: String = "Test Fuel Station",
@@ -41,15 +60,7 @@ trait BaseSpec
                                permanentClosure: Option[Boolean] = Some(false),
                                isMotorwayServiceStation: Option[Boolean] = Some(false),
                                isSupermarketServiceStation: Option[Boolean] = Some(false),
-                               location: FuelStationLocation = FuelStationLocation(
-                                 addressLine1 = Some("123 Test Street"),
-                                 addressLine2 = None,
-                                 city = "City",
-                                 county = None,
-                                 country = Some("UK"),
-                                 postcode = "postcode",
-                                 location = Some(GeoLoc(51.5014, -0.1419))
-                               ),
+                               location: FuelStationLocation = fakeFuelStationLocation(),
                                fuelTypes: List[String] = List("PETROL", "DIESEL"),
                                fuelPrices: Seq[FuelPrice] = Seq(
                                  FuelPrice(1.45, FuelType.E10, Instant.parse("2024-01-01T00:00:00Z"), Instant.parse("2024-01-01T00:00:00Z")),
