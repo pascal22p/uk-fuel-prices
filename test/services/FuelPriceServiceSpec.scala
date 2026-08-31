@@ -1,7 +1,7 @@
 package services
 
 import connectors.FuelPriceConnector
-import models.{FuelPrice, FuelPriceForStation, FuelStation, FuelStationLocation, FuelType}
+import models.{FuelPrice, FuelPriceForStation, FuelStation, FuelType}
 import queries.{DeleteSqlQueries, GetSqlQueries, InsertSqlQueries}
 import testUtils.BaseSpec
 import uk.gov.hmrc.http.{HeaderCarrier, UpstreamErrorResponse}
@@ -35,10 +35,10 @@ class FuelPriceServiceSpec extends BaseSpec {
     "upload data recursively until not found" in {
       when(mockFuelPriceConnector.fuelStations(any(), any())(using any())).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelStation("nodeId1", "tradingName", None, "brandName", None, None, None, None, FuelStationLocation(None, None, "city", None, None, "postcode", 0.0, 0.0), List.empty)
+          fakeFuelStation(nodeId = "nodeId1")
         )),
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelStation("nodeId2", "tradingName", None, "brandName", None, None, None, None, FuelStationLocation(None, None, "city", None, None, "postcode", 0.0, 0.0), List.empty)
+          fakeFuelStation(nodeId = "nodeId2")
         )),
         EitherT.leftT[Future, Seq[FuelStation]](UpstreamErrorResponse("not found", NOT_FOUND))
       )
@@ -57,7 +57,7 @@ class FuelPriceServiceSpec extends BaseSpec {
     "upload data recursively until empty" in {
       when(mockFuelPriceConnector.fuelStations(any(), any())(using any())).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelStation("nodeId1", "tradingName", None, "brandName", None, None, None, None, FuelStationLocation(None, None, "city", None, None, "postcode", 0.0, 0.0), List.empty)
+          fakeFuelStation(nodeId = "nodeId1")
         )),
         EitherT.rightT[Future, UpstreamErrorResponse](Seq.empty)
       )
@@ -76,10 +76,10 @@ class FuelPriceServiceSpec extends BaseSpec {
     "return UpstreamErrorResponse" in {
       when(mockFuelPriceConnector.fuelStations(any(), any())(using any())).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelStation("nodeId1", "tradingName", None, "brandName", None, None, None, None, FuelStationLocation(None, None, "city", None, None, "postcode", 0.0, 0.0), List.empty)
+          fakeFuelStation(nodeId = "nodeId1")
         )),
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelStation("nodeId2", "tradingName", None, "brandName", None, None, None, None, FuelStationLocation(None, None, "city", None, None, "postcode", 0.0, 0.0), List.empty)
+          fakeFuelStation(nodeId = "nodeId2")
         )),
         EitherT.leftT[Future, Seq[FuelStation]](UpstreamErrorResponse("server error", INTERNAL_SERVER_ERROR))
       )
@@ -279,8 +279,8 @@ class FuelPriceServiceSpec extends BaseSpec {
       val now = Instant.now
       when(mockGetSqlQueries.getFuelStations(any[String])).thenReturn(
         Future.successful(Seq(
-          FuelStation("nodeId1", "tradingName", None, "brandName", None, None, None, None, FuelStationLocation(None, None, "city", None, None, "postcode", 0.0, 0.0), List.empty),
-          FuelStation("nodeId2", "tradingName", None, "brandName", None, None, None, None, FuelStationLocation(None, None, "city", None, None, "postcode", 0.0, 0.0), List.empty)
+          fakeFuelStation(nodeId = "nodeId1"),
+          fakeFuelStation(nodeId = "nodeId2")
         ))
       )
 

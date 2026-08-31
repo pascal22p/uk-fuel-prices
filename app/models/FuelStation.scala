@@ -48,14 +48,19 @@ object FuelStation {
       get[Option[String]]("country") ~
       get[Option[String]]("county") ~
       get[String]("postcode") ~
-      get[Double]("latitude") ~
-      get[Double]("longitude") ~
+      get[Option[Double]]("latitude") ~
+      get[Option[Double]]("longitude") ~
       get[String]("fuelTypes")
     ).map {
     case nodeId ~ tradingName ~ isSameTradingAndBrandName ~ brandName ~
       temporaryClosure ~ permanentClosure ~ isMotorwayServiceStation ~
       isSupermarketServiceStation ~ addressLine1 ~ addressLine2 ~ city ~
       country ~ county ~ postcode ~ latitude ~ longitude ~ fuelTypes =>
+      val loc = (latitude, longitude) match {
+        case (Some(lat), Some(lon)) => Some(GeoLoc(lat, lon))
+        case _ => None
+      }
+
       FuelStation(
         nodeId = nodeId,
         tradingName = tradingName,
@@ -72,8 +77,7 @@ object FuelStation {
           country = country,
           county = county,
           postcode = postcode,
-          latitude = latitude,
-          longitude = longitude
+          location = loc
         ),
         fuelTypes = fuelTypes.split(",").toList.filter(_.nonEmpty)
       )

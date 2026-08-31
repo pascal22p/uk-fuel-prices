@@ -29,14 +29,19 @@ class SearchByPostcodeService @Inject()(
       boundingBox <- EitherT.rightT(GeoBoundingBox.fromRadius(coordinates.latitude, coordinates.longitude, radius * 1.60934))
       fuelStationsCandidates <- EitherT.liftF(getSqlQueries.getFuelStations(boundingBox))
       fuelStations = fuelStationsCandidates.filter { station =>
-        Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, station.location.latitude, station.location.longitude).s12 <= radius * 1.60934 * 1000.0
+        station.location.location.fold(false) { loc =>
+          Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, loc.latitude, loc.longitude).s12 <= radius * 1.60934 * 1000.0
+        }
       }
       fuelStationWithPrices <-
         EitherT.liftF(
           getSqlQueries.findPricesForStations(fuelStations.map(_.nodeId)).map { fuelStationsWithPrices =>
             fuelStationsWithPrices.map { fuelStation =>
               val latestPrice = fuelStation.fuelPrices.filter(_.fuelType == fuelType).maxByOption(_.priceChangeEffectiveTimestamp).toList
-              val distance    = Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, fuelStation.location.latitude, fuelStation.location.longitude).s12
+              val distance    = 
+                fuelStation.location.location.fold(0.0) { loc =>
+                  Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, loc.latitude, loc.longitude).s12
+                }
 
               fuelStation.copy(fuelPrices = latestPrice, distance = distance)
             }.toList

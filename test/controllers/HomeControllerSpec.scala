@@ -246,6 +246,8 @@ class HomeControllerSpec extends BaseSpec {
 
       status(result) mustBe OK
       contentAsString(result) must include(station.tradingName)
+      contentAsString(result) must include("const lat = 51.5014;")
+      contentAsString(result) must include("const lng = -0.1419;")
 
       verify(mockFuelStationsService)
         .getFuelStationWithLatestPrices(nodeId)

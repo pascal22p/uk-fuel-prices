@@ -54,7 +54,9 @@ class FuelStationsService @Inject()(
       boundingBox <- OptionT.some(GeoBoundingBox.fromRadius(coordinates.latitude, coordinates.longitude, radius * 1.60934))
       fuelStationsCandidates <- OptionT.liftF(getSqlQueries.getFuelStations(boundingBox))
       fuelStations = fuelStationsCandidates.filter { station =>
-        Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, station.location.latitude, station.location.longitude).s12 <= radius * 1.60934 * 1000.0
+        station.location.location.fold(false) { loc =>
+          Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, loc.latitude, loc.longitude).s12 <= radius * 1.60934 * 1000.0
+        }
       }
       lastUpdates <- 
         if(fuelStations.nonEmpty) {
@@ -74,7 +76,9 @@ class FuelStationsService @Inject()(
       boundingBox <- OptionT.some(GeoBoundingBox.fromRadius(coordinates.latitude, coordinates.longitude, radius * 1.60934))
       fuelStationsCandidates <- OptionT.liftF(getSqlQueries.getFuelStations(boundingBox))
       fuelStations = fuelStationsCandidates.filter { station =>
-        Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, station.location.latitude, station.location.longitude).s12 <= radius * 1.60934 * 1000.0
+        station.location.location.fold(false) { loc =>
+          Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, loc.latitude, loc.longitude).s12 <= radius * 1.60934 * 1000.0
+        }
       }
       cheapestPrices <-
         if (fuelStations.nonEmpty) {

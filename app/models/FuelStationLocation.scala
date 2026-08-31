@@ -5,14 +5,13 @@ import play.api.libs.functional.syntax.*
 import play.twirl.api.HtmlFormat
 
 final case class FuelStationLocation(
-                     addressLine1: Option[String],
-                     addressLine2: Option[String],
-                     city: String,
-                     country: Option[String],
-                     county: Option[String],
-                     postcode: String,
-                     latitude: Double,
-                     longitude: Double
+                                      addressLine1: Option[String],
+                                      addressLine2: Option[String],
+                                      city: String,
+                                      country: Option[String],
+                                      county: Option[String],
+                                      postcode: String,
+                                      location: Option[GeoLoc]
                    ) {
   def fullAddress: String = {
     List(addressLine1, addressLine2, Some(city), Some(postcode)).flatten.mkString(", ")
@@ -31,7 +30,6 @@ object FuelStationLocation {
       (JsPath \ "country").readNullable[String] and
       (JsPath \ "county").readNullable[String] and
       (JsPath \ "postcode").read[String] and
-      (JsPath \ "latitude").read[Double] and
-      (JsPath \ "longitude").read[Double]
+      GeoLoc.geoLocJsonReads
     )(FuelStationLocation.apply)
 }

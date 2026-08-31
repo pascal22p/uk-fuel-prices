@@ -1,7 +1,7 @@
 package services
 
 import connectors.FuelPriceConnector
-import models.{FuelPrice, FuelStation, FuelStationLocation, FuelType, GeoLoc}
+import models.{FuelPrice, FuelType, GeoLoc}
 import queries.GetSqlQueries
 import testUtils.BaseSpec
 import uk.gov.hmrc.http.HeaderCarrier
@@ -32,16 +32,14 @@ class FuelStationsServiceSpec extends BaseSpec {
     val geoLoc = GeoLoc(51.5074, -0.1278)
     val radiusMiles = 10
 
-    val nearStation = FuelStation(
-      "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", 51.51, -0.13), // ~1km away
-      List.empty
+    val nearStation = fakeFuelStation(
+      nodeId = "nearNodeId",
+      location = fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13)))
     )
 
-    val farStation = FuelStation(
-      "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", -33.8688, 151.2093), // Sydney
-      List.empty
+    val farStation = fakeFuelStation(
+      nodeId = "farNodeId",
+      location = fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093)))
     )
 
     "return prices for stations within the actual geodesic radius when geoloc is provided" in {
@@ -147,22 +145,45 @@ class FuelStationsServiceSpec extends BaseSpec {
       actualBoundingBox.minLon mustBe expectedBoundingBox.minLon
       actualBoundingBox.maxLon mustBe expectedBoundingBox.maxLon
     }
+
+    "exclude stations that have no location without querying their prices" in {
+      when(mockAppConfig.localStationsRadius).thenReturn(radiusMiles)
+
+      val stationWithoutLocation = fakeFuelStation(
+        nodeId = "noLocationNodeId",
+        location = fakeFuelStationLocation(location = None)
+      )
+
+      when(mockGetSqlQueries.getFuelStations(any[GeoBoundingBox])).thenReturn(
+        Future.successful(Seq(stationWithoutLocation, nearStation))
+      )
+
+      when(mockGetSqlQueries.getLatestFuelPricesWithStation(any[Int], any[Seq[String]])).thenReturn(
+        Future.successful(Seq.empty)
+      )
+
+      sut.getLatestFuelPricesWithStation(5, Some(geoLoc)).futureValue
+
+      verify(mockGetSqlQueries).getLatestFuelPricesWithStation(
+        5,
+        Seq("nearNodeId")
+      )
+    }
+
   }
 
   "getCheapestPricesWithStation" must {
     val geoLoc = GeoLoc(51.5074, -0.1278)
     val radiusMiles = 10
 
-    val nearStation = FuelStation(
-      "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", 51.51, -0.13), // ~1km away
-      List.empty
+    val nearStation = fakeFuelStation(
+      nodeId = "nearNodeId",
+      location = fakeFuelStationLocation(location = Some(GeoLoc(51.51, -0.13)))
     )
 
-    val farStation = FuelStation(
-      "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
-      FuelStationLocation(None, None, "city", None, None, "postcode", -33.8688, 151.2093), // Sydney
-      List.empty
+    val farStation = fakeFuelStation(
+      nodeId = "farNodeId",
+      location = fakeFuelStationLocation(location = Some(GeoLoc(-33.8688, 151.2093)))
     )
 
     "return prices for stations within the actual geodesic radius when geoloc is provided" in {
@@ -269,6 +290,30 @@ class FuelStationsServiceSpec extends BaseSpec {
       actualBoundingBox.maxLat mustBe expectedBoundingBox.maxLat
       actualBoundingBox.minLon mustBe expectedBoundingBox.minLon
       actualBoundingBox.maxLon mustBe expectedBoundingBox.maxLon
+    }
+
+    "exclude stations that have no location without querying their prices" in {
+      when(mockAppConfig.localStationsRadius).thenReturn(radiusMiles)
+
+      val stationWithoutLocation = fakeFuelStation(
+        nodeId = "noLocationNodeId",
+        location = fakeFuelStationLocation(location = None)
+      )
+
+      when(mockGetSqlQueries.getFuelStations(any[GeoBoundingBox])).thenReturn(
+        Future.successful(Seq(stationWithoutLocation, nearStation))
+      )
+
+      when(mockGetSqlQueries.getCheapestFuelPricesWithStation(any[Int], any[Seq[String]])).thenReturn(
+        Future.successful(Seq.empty)
+      )
+
+      sut.getCheapestPricesWithStation(5, Some(geoLoc)).futureValue
+
+      verify(mockGetSqlQueries).getCheapestFuelPricesWithStation(
+        5,
+        Seq("nearNodeId")
+      )
     }
   }
 
