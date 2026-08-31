@@ -81,39 +81,43 @@
         ))
     }
 
-    <h2 class="govuk-heading-m">@messages("Location")</h2>
-    <div class="govuk-grid-row">
-    <div class="govuk-grid-column-two-thirds">
-        <div id="map"></div>
-    </div>
-    <style>
-            #map {
-                height: 400px;
-                width: 100%;
-            }
-    </style>
-    <script>
-            const lat = @station.location.latitude;
-            const lng = @station.location.longitude;
-            const tradingName = @Html(views.utils.Escaping.jsStringLiteral(station.tradingName));
+    @for(loc <- station.location.location) {
+        <h2 class="govuk-heading-m">@messages("Location")</h2>
+        <div class="govuk-grid-row">
+        <div class="govuk-grid-column-two-thirds">
+            <div id="map"></div>
+        </div>
+        <style>
+                #map {
+                    height: 400px;
+                    width: 100%;
+                }
+        </style>
 
-            // Create map centered at coordinates
-            const map = L.map('map').setView([lat, lng], 13);
+        <script>
+                const lat = @loc.latitude;
+                const lng = @loc.longitude;
+                const tradingName = @Html(views.utils.Escaping.jsStringLiteral(station.tradingName));
 
-            // Add OpenStreetMap tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+                // Create map centered at coordinates
+                const map = L.map('map').setView([lat, lng], 13);
 
-            // Add marker (pin)
-            L.marker([lat, lng])
-                    .addTo(map)
-                    .bindPopup(tradingName)
-                    .openPopup();
-    </script>
-    </div>
+                // Add OpenStreetMap tiles
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
 
-    <div class="govuk-grid-row" style="margin-top: 20px">
+                // Add marker (pin)
+                L.marker([lat, lng])
+                        .addTo(map)
+                        .bindPopup(tradingName)
+                        .openPopup();
+        </script>
+        </div>
+
+        <div class="govuk-grid-row" style="margin-top: 20px">
+    }
+
     <div class="govuk-grid-column-two-thirds">
         <h2 class="govuk-heading-m">@messages("station.priceHistory")</h2>
         <canvas id="fuelChart"></canvas>

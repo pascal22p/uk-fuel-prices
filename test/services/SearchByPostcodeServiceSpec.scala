@@ -31,12 +31,12 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
   val radiusMiles = 10.0
   val farStation = FuelStation(
     "farNodeId", "farTradingName", None, "brandName", None, None, None, None,
-    FuelStationLocation(None, None, "city", None, None, "postcode", -33.8688, 151.2093), // Sydney
+    FuelStationLocation(None, None, "city", None, None, "postcode", Some(GeoLoc(-33.8688, 151.2093))), // Sydney
     List.empty
   )
   val nearStation = FuelStation(
     "nearNodeId", "nearTradingName", None, "brandName", None, None, None, None,
-    FuelStationLocation(None, None, "city", None, None, "postcode", 51.51, -0.13), // ~1km away
+    FuelStationLocation(None, None, "city", None, None, "postcode", Some(GeoLoc(51.51, -0.13))), // ~1km away
     List.empty
   )
   val now = Instant.now

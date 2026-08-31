@@ -21,8 +21,10 @@ final case class FuelStationWithPrices(
                               fuelPrices: Seq[FuelPrice],
                               distance: Double
                             ) {
-  def distanceFromCentre(centre: GeoLoc): Double = {
-    Geodesic.WGS84.Inverse(centre.latitude, centre.longitude, location.latitude, location.longitude).s12
+  def distanceFromCentre(centre: GeoLoc): Option[Double] = {
+    location.location.map { loc =>
+      Geodesic.WGS84.Inverse(centre.latitude, centre.longitude, loc.latitude, loc.longitude).s12
+    }
   }
 }
 
@@ -56,15 +58,21 @@ object FuelStationWithPrices {
       get[Option[String]]("addressLine2") ~
       get[Option[String]]("city") ~
       get[Option[String]]("postcode") ~
+      get[Option[Double]]("latitude") ~
+      get[Option[Double]]("longitude") ~
       get[Double]("price") ~
       get[String]("fuelType") ~
       get[Instant]("priceLastUpdated") ~
       get[Instant]("priceChangeEffectiveTimestamp")
     ).map {
-    case nodeId ~ tradingName ~ temporaryClosure ~ permanentClosure ~ isMotorwayServiceStation ~ isSupermarketServiceStation ~ addressLine1 ~ addressLine2 ~ city ~ postcode ~ price ~ fuelType ~ priceLastUpdated ~ priceChangeEffectiveTimestamp =>
+    case nodeId ~ tradingName ~ temporaryClosure ~ permanentClosure ~ isMotorwayServiceStation ~ isSupermarketServiceStation ~ addressLine1 ~ addressLine2 ~ city ~ postcode ~ latitude ~ longitude ~ price ~ fuelType ~ priceLastUpdated ~ priceChangeEffectiveTimestamp =>
+      val loc = (latitude, longitude) match {
+        case (Some(lat), Some(lon)) => Some(GeoLoc(lat, lon))
+        case _ => None
+      }
       FuelStationWithPrices(
         nodeId, tradingName, None, "", temporaryClosure, permanentClosure, isMotorwayServiceStation, isSupermarketServiceStation,
-        FuelStationLocation(addressLine1, addressLine2, city.getOrElse(""), None, None, postcode.getOrElse(""), 0.0, 0.0),
+        FuelStationLocation(addressLine1, addressLine2, city.getOrElse(""), None, None, postcode.getOrElse(""), loc),
         List.empty,
         Seq(FuelPrice(price, FuelType.valueOf(fuelType), priceLastUpdated, priceChangeEffectiveTimestamp)),
         0.0

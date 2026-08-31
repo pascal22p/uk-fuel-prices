@@ -52,8 +52,8 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
         "country"                       -> station.location.country,
         "county"                        -> station.location.county,
         "postcode"                      -> station.location.postcode,
-        "latitude"                      -> station.location.latitude,
-        "longitude"                     -> station.location.longitude
+        "latitude"                      -> station.location.location.map(_.latitude),
+        "longitude"                     -> station.location.location.map(_.longitude)
       )
     }
 

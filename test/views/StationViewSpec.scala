@@ -42,8 +42,7 @@ class StationViewSpec extends BaseSpec {
         county = None,
         country = None,
         postcode = "SW1A 1AA",
-        latitude = 51.5014,
-        longitude = -0.1419
+        location = Some(GeoLoc(51.5014,-0.1419))
       ),
       fuelTypes = List.empty,
       fuelPrices = Seq(

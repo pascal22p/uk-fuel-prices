@@ -10,7 +10,7 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Injecting
 import java.time.Instant
-import models.{FuelStationLocation, FuelStationWithPrices, FuelPrice, FuelType}
+import models.{GeoLoc, FuelStationLocation, FuelStationWithPrices, FuelPrice, FuelType}
 
 trait BaseSpec
     extends PlaySpec
@@ -48,8 +48,7 @@ trait BaseSpec
                                  county = None,
                                  country = Some("UK"),
                                  postcode = "postcode",
-                                 latitude = 51.5014,
-                                 longitude = -0.1419
+                                 location = Some(GeoLoc(51.5014, -0.1419))
                                ),
                                fuelTypes: List[String] = List("PETROL", "DIESEL"),
                                fuelPrices: Seq[FuelPrice] = Seq(

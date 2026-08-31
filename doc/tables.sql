@@ -88,8 +88,8 @@ CREATE TABLE `fuel_stations` (
                                  `country` varchar(256) DEFAULT NULL,
                                  `county` varchar(256) DEFAULT NULL,
                                  `postcode` varchar(128) NOT NULL,
-                                 `latitude` double NOT NULL,
-                                 `longitude` double NOT NULL,
+                                 `latitude` double DEFAULT NULL,
+                                 `longitude` double DEFAULT NULL,
                                  `lastUpdated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
                                  PRIMARY KEY (`nodeId_bin`),
                                  KEY `postcode` (`postcode`)
