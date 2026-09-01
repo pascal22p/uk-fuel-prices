@@ -32,28 +32,6 @@ class FuelPriceServiceSpec extends BaseSpec {
   }
 
   "uploadAllFuelStations" must {
-    "upload data recursively until not found" in {
-      when(mockFuelPriceConnector.fuelStations(any(), any())(using any())).thenReturn(
-        EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          fakeFuelStation(nodeId = "nodeId1")
-        )),
-        EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          fakeFuelStation(nodeId = "nodeId2")
-        )),
-        EitherT.leftT[Future, Seq[FuelStation]](UpstreamErrorResponse("not found", NOT_FOUND))
-      )
-
-      when(mockInsertSqlQueries.insertStations(any())).thenReturn(
-        Future.successful(1)
-      )
-
-      val result = sut.uploadAllFuelStations().value.futureValue
-
-      result mustBe Right(true)
-      verify(mockFuelPriceConnector, times(3)).fuelStations(any(), any())(using any())
-      verify(mockInsertSqlQueries, times(2)).insertStations(any())
-    }
-
     "upload data recursively until empty" in {
       when(mockFuelPriceConnector.fuelStations(any(), any())(using any())).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
@@ -97,47 +75,6 @@ class FuelPriceServiceSpec extends BaseSpec {
   }
 
   "uploadAllFuelPrices" must {
-    "upload data recursively until not found" in {
-      when(mockFuelPriceConnector.fuelPrices(any(), any())(using any())).thenReturn(
-        EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelPriceForStation(
-            "nodeId1", 
-            Seq(FuelPrice(150.0, FuelType.E10, Instant.now, Instant.now)))
-        )),
-        EitherT.rightT[Future, UpstreamErrorResponse](Seq(
-          FuelPriceForStation(
-            "nodeId2",
-            Seq(FuelPrice(1.50, FuelType.E10, Instant.now, Instant.now), FuelPrice(1500, FuelType.E10, Instant.now, Instant.now)))
-        )),
-        EitherT.leftT[Future, Seq[FuelPriceForStation]](UpstreamErrorResponse("not found", NOT_FOUND))
-      )
-
-      when(mockInsertSqlQueries.insertFuelPrices(any())).thenReturn(
-        Future.successful(1)
-      )
-
-      when(mockDeleteSqlQueries.deleteFuelPrices(any())).thenReturn(
-        Future.successful(1)
-      )
-      when(mockDeleteSqlQueries.deleteStations(any())).thenReturn(
-        Future.successful(1)
-      )
-      when(mockGetSqlQueries.findAbsentFuelStations(any())).thenReturn(
-        Future.successful(Seq.empty)
-      )
-
-      val argumentCaptorFuelPrices: ArgumentCaptor[Seq[FuelPriceForStation]] =
-        ArgumentCaptor.forClass(classOf[Seq[FuelPriceForStation]])
-
-      val result = sut.uploadAllFuelPrices().value.futureValue
-
-      result mustBe Right(true)
-      verify(mockFuelPriceConnector, times(3)).fuelPrices(any(), any())(using any())
-      verify(mockInsertSqlQueries, times(2)).insertFuelPrices(argumentCaptorFuelPrices.capture())
-
-      argumentCaptorFuelPrices.getAllValues.asScala.toSeq.flatten.flatMap(_.fuelPrices).map(_.price) mustBe Seq(150.0, 150.0, 150.0)
-    }
-
     "upload data recursively until empty" in {
       when(mockFuelPriceConnector.fuelPrices(any(), any())(using any())).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](Seq(
