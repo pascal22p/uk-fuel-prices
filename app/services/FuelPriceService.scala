@@ -34,10 +34,6 @@ class FuelPriceService @Inject()(
           uploadAllFuelStations(batchNumber + 1, effectiveStartDate)
             .map(_ => true)
         }
-    }.transform {
-      // not found response. End of the line, returning success.
-      case Left(error) if error.statusCode == NOT_FOUND => Right(true)
-      case result => result
     }
   }
 
