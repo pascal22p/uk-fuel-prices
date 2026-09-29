@@ -33,17 +33,6 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def getLastUpdate(lockId: String): Future[Option[Instant]] = Future {
-    db.withConnection { implicit conn =>
-      SQL(
-        """SELECT lastUpdate
-          |FROM fuel_locks
-          |WHERE id = {lockId}""".stripMargin)
-        .on("lockId" -> lockId)
-        .as(SqlParser.scalar[Instant].singleOpt)
-    }
-  }(using databaseExecutionContext)
-
   def getLatestFuelPricesWithStation(numberOfResult: Int, stationsFilter: Seq[String] = Seq.empty): Future[Seq[FuelStationWithPrices]] = Future {
     val stationParams: Seq[NamedParameter] =
       stationsFilter.zipWithIndex.map { case (h, i) => NamedParameter(s"station$i", h) }
@@ -382,27 +371,6 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
           |FOR UPDATE NOWAIT""".stripMargin)
         .on("lockId" -> LockId.stationsAndPricesLock.toString)
         .as(scalar[LocalDateTime].singleOpt)
-    }
-  }(using databaseExecutionContext)
-
-  def getAllFuelPrices: Future[Seq[FuelPriceWithNodeId]] = Future {
-    db.withConnection { implicit conn =>
-      SQL(
-        """SELECT UPPER(HEX(nodeId_bin)) AS nodeId, price, name AS fuelType, priceLastUpdated, priceChangeEffectiveTimestamp
-          |FROM fuel_prices
-          |LEFT JOIN fuel_types ON fuel_types.id = fuel_prices.fuelTypeId
-          |""".stripMargin)
-        .as(FuelPriceWithNodeId.fuelPriceParser.*)
-    }
-  }(using databaseExecutionContext)
-
-  def getAllFuelStations: Future[Seq[FuelStation]] = Future {
-    db.withConnection { implicit conn =>
-      SQL(
-        """SELECT *, UPPER(HEX(nodeId_bin)) AS nodeId
-          |FROM fuel_stations
-          |""".stripMargin)
-        .as(FuelStation.fuelStationParser.*)
     }
   }(using databaseExecutionContext)
 
