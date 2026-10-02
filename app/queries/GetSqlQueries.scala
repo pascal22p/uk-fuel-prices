@@ -256,6 +256,51 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }.toSeq.sortBy(_.fuelPrices.map(_.price).min)(using Ordering[Double])
   }(using databaseExecutionContext)
 
+  def getAverageFuelPrices: Future[Seq[AverageFuelPrice]] = Future {
+    db.withConnection { implicit conn =>
+      /**
+       * Average of the latest price of each fuel type across all stations.
+       *
+       * Only the most recently updated price per station + fuel type is considered (same
+       * ROW_NUMBER() approach as the queries above), and a price only counts if:
+       *   - it was last updated within the past 6 months
+       *   - its station is not permanently or temporarily closed (NULL treated as "not closed")
+       *
+       * Result rows are unordered.
+       */
+      SQL(
+        """WITH current_prices AS (
+          |    SELECT
+          |        fp.nodeId_bin,
+          |        fp.fuelTypeId,
+          |        fp.price,
+          |        fp.priceLastUpdated,
+          |        ROW_NUMBER() OVER (
+          |            PARTITION BY fp.nodeId_bin, fp.fuelTypeId
+          |            ORDER BY fp.lastUpdated DESC
+          |        ) AS rowNumber
+          |    FROM fuel_prices fp
+          |),
+          |latest AS (
+          |    SELECT * FROM current_prices WHERE rowNumber = 1
+          |)
+          |SELECT
+          |    ft.name AS fuelType,
+          |    AVG(l.price) AS averagePrice,
+          |    COUNT(*) AS stationCount
+          |FROM latest l
+          |JOIN fuel_types ft    ON ft.id = l.fuelTypeId
+          |JOIN fuel_stations fs ON fs.nodeId_bin = l.nodeId_bin
+          |WHERE l.priceLastUpdated >= UTC_TIMESTAMP() - INTERVAL 6 MONTH
+          |  AND COALESCE(fs.permanentClosure, 0) = 0
+          |  AND COALESCE(fs.temporaryClosure, 0) = 0
+          |GROUP BY ft.id, ft.name;
+          |""".stripMargin
+      )
+        .as(AverageFuelPrice.averageFuelPriceParser.*)
+    }.sortBy(_.fuelType.ordinal)
+  }(using databaseExecutionContext)
+
   def getUserData(username: String): OptionT[Future, UserData] = OptionT(Future {
     db.withConnection { implicit conn =>
       SQL(
