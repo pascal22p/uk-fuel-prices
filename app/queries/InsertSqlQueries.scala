@@ -82,6 +82,16 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
         |   `price` = VALUES(`price`)
         """.stripMargin
 
+    val sqlCurrentStatement =
+      """INSERT INTO `fuel_prices_latest`
+        | (`nodeId_bin`, `price`, `fuelTypeId`, `priceLastUpdated`, `priceChangeEffectiveTimestamp`)
+        | VALUES (UNHEX({nodeId}), {price}, {fuelTypeId}, {priceLastUpdated}, {priceChangeEffectiveTimestamp})
+        | ON DUPLICATE KEY UPDATE
+        |   `price` = VALUES(`price`),
+        |   `priceLastUpdated` = VALUES(`priceLastUpdated`),
+        |   `priceChangeEffectiveTimestamp` = VALUES(`priceChangeEffectiveTimestamp`)
+      """.stripMargin
+
     val parameters = fuelStations.flatMap { station =>
       station.fuelPrices.map { fuel =>
         Seq[NamedParameter](
@@ -94,8 +104,9 @@ final class InsertSqlQueries @Inject()(db: Database, databaseExecutionContext: D
       }
     }
 
-    db.withConnection { implicit conn =>
+    db.withTransaction { implicit conn =>
       BatchSql(sqlStatement, parameters.head, parameters.tail *).execute()
+      BatchSql(sqlCurrentStatement, parameters.head, parameters.tail *).execute()
     }.sum
   }(using databaseExecutionContext)
 

@@ -61,6 +61,22 @@ CREATE TABLE `fuel_prices` (
                                CONSTRAINT `fuel_prices_ibfk_1` FOREIGN KEY (`nodeId_bin`) REFERENCES `fuel_stations` (`nodeId_bin`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+DROP TABLE IF EXISTS `fuel_prices_latest`;
+CREATE TABLE `fuel_prices_latest` (
+                                       `nodeId_bin` binary(32) NOT NULL,
+                                       `fuelTypeId` tinyint(3) unsigned NOT NULL,
+                                       `price` float NOT NULL,
+                                       `priceLastUpdated` timestamp NOT NULL,
+                                       `priceChangeEffectiveTimestamp` timestamp NOT NULL,
+                                       `lastUpdated` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+                                       PRIMARY KEY (`nodeId_bin`, `fuelTypeId`),
+                                       KEY `priceLastUpdated` (`priceLastUpdated`),
+                                       CONSTRAINT `fuel_prices_latest_ibfk_station`
+                                           FOREIGN KEY (`nodeId_bin`) REFERENCES `fuel_stations` (`nodeId_bin`)
+                                               ON DELETE CASCADE ON UPDATE CASCADE,
+                                       CONSTRAINT `fuel_prices_latest_ibfk_fuel_type`
+                                           FOREIGN KEY (`fuelTypeId`) REFERENCES `fuel_types` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS `fuel_sessions`;
 CREATE TABLE `fuel_sessions` (
