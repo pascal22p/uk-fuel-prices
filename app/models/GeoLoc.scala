@@ -1,12 +1,14 @@
 package models
 
-import play.api.libs.json.{Reads, JsPath}
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import play.api.libs.functional.syntax.*
 
 
 final case class GeoLoc(latitude: Double, longitude: Double)
 
 object GeoLoc {
+  val writeExport: Writes[GeoLoc] = Json.writes[GeoLoc]
+  
   private val UkMinLatitude = 49.8
   private val UkMaxLatitude = 59.0
   private val UkMinLongitude = -8.2

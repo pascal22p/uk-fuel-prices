@@ -1,6 +1,6 @@
 package models
 
-import play.api.libs.json.{JsPath, Reads}
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import play.api.libs.functional.syntax.*
 import play.twirl.api.HtmlFormat
 
@@ -23,6 +23,11 @@ final case class FuelStationLocation(
 }
 
 object FuelStationLocation {
+  val writesExport: Writes[FuelStationLocation] = {
+    given Writes[GeoLoc] = GeoLoc.writeExport
+    Json.writes[FuelStationLocation]
+  }
+
   implicit val fuelStationLocationReads: Reads[FuelStationLocation] = (
     (JsPath \ "address_line_1").readNullable[String] and
       (JsPath \ "address_line_2").readNullable[String] and
