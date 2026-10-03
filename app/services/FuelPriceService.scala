@@ -84,10 +84,7 @@ class FuelPriceService @Inject()(
   def getFuelPriceFromPostcode(postcode: String): Future[Seq[FuelStationWithPrices]] = {
     getSqlQueries.getFuelStations(postcode).flatMap { stations =>
       stations.traverse { station =>
-        getSqlQueries.findPricesForStation(station.nodeId).map { stations =>
-          val prices = stations.flatMap(_.fuelPrices)
-          stations.headOption.map(_.copy(fuelPrices = prices))
-        }
+        getSqlQueries.findHistoricalPricesForStation(station.nodeId)
       }.map(_.flatten)
     }
   }

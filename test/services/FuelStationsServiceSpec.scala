@@ -350,43 +350,26 @@ class FuelStationsServiceSpec extends BaseSpec {
     )
 
     "return the latest price for each fuel type" in {
-      when(mockGetSqlQueries.findPricesForStation("station-1"))
-        .thenReturn(Future.successful(Seq(station)))
+      when(mockGetSqlQueries.findLatestPricesForStation("station-1"))
+        .thenReturn(Future.successful(Some(station)))
 
       val result = sut.getFuelStationWithLatestPrices("station-1").futureValue
 
-      result mustBe defined
+      result mustBe Some(station)
 
-      val latestPrices = result.value.fuelPrices
-
-      latestPrices must contain theSameElementsAs Seq(
-        FuelPrice(
-          155.0,
-          FuelType.E10,
-          Instant.parse("2026-08-29T11:00:00Z"),
-          Instant.parse("2026-08-29T11:00:00Z")
-        ),
-        FuelPrice(
-          158.0,
-          FuelType.B7_PREMIUM,
-          Instant.parse("2026-08-29T12:00:00Z"),
-          Instant.parse("2026-08-29T12:00:00Z")
-        )
-      )
-
-      verify(mockGetSqlQueries).findPricesForStation("station-1")
+      verify(mockGetSqlQueries).findLatestPricesForStation("station-1")
     }
 
     "return None when no station is found" in {
-      when(mockGetSqlQueries.findPricesForStation("missing-station"))
-        .thenReturn(Future.successful(Seq.empty))
+      when(mockGetSqlQueries.findLatestPricesForStation("missing-station"))
+        .thenReturn(Future.successful(None))
 
       val result =
         sut.getFuelStationWithLatestPrices("missing-station").futureValue
 
       result mustBe None
 
-      verify(mockGetSqlQueries).findPricesForStation("missing-station")
+      verify(mockGetSqlQueries).findLatestPricesForStation("missing-station")
     }
 
     "return the station with no prices when the station has no price data" in {
@@ -395,17 +378,15 @@ class FuelStationsServiceSpec extends BaseSpec {
         fuelPrices = Seq.empty
       )
 
-      when(mockGetSqlQueries.findPricesForStation("station-without-prices"))
-        .thenReturn(Future.successful(Seq(stationWithoutPrices)))
+      when(mockGetSqlQueries.findLatestPricesForStation("station-without-prices"))
+        .thenReturn(Future.successful(Some(stationWithoutPrices)))
 
       val result =
         sut.getFuelStationWithLatestPrices("station-without-prices").futureValue
 
-      result mustBe defined
-      result.value.nodeId mustBe "station-without-prices"
-      result.value.fuelPrices mustBe empty
+      result mustBe Some(stationWithoutPrices)
 
-      verify(mockGetSqlQueries).findPricesForStation("station-without-prices")
+      verify(mockGetSqlQueries).findLatestPricesForStation("station-without-prices")
     }
   }
 }
