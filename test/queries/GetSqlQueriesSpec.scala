@@ -60,7 +60,7 @@ class GetSqlQueriesSpec extends MariadbHelper with Logging {
           FuelPriceForStation(
             nodeId = nodeId,
             fuelPrices = Seq(
-              fakeFuelPrice(price = 1.45, fuelType = FuelType.E10, priceLastUpdated = Instant.now)
+              fakeFuelPrice(price = 1.45, fuelType = FuelType.E10, priceChangeEffectiveTimestamp = Instant.now)
             )
           )
         ))
@@ -130,30 +130,34 @@ class GetSqlQueriesSpec extends MariadbHelper with Logging {
             )
           )
         ))
-        result <- sut.findPricesForStation(
+        result <- sut.findHistoricalPricesForStation(
           nodeId1
         )
       } yield result).futureValue
 
-      result mustBe List(
+      result mustBe Some(
         fakeFuelStationWithPrices(
           nodeId = nodeId1,
           isSameTradingAndBrandName = None,
           brandName = "",
           location = fakeFuelStationLocation(country = None),
           fuelTypes = List(),
-          fuelPrices = List(FuelPrice(1.45, FuelType.E10, Instant.parse("2024-01-01T00:00:00Z"), Instant.parse("2024-01-01T00:00:00Z")))
-        ),
-        fakeFuelStationWithPrices(
-          nodeId = nodeId1,
-          isSameTradingAndBrandName = None,
-          brandName = "",
-          location = fakeFuelStationLocation(country = None),
-          fuelTypes = List(),
-          fuelPrices = List(FuelPrice(1.55, FuelType.E5, Instant.parse("2024-01-01T00:00:00Z"), Instant.parse("2024-01-01T00:00:00Z")))
+          fuelPrices = List(
+            FuelPrice(
+              1.45,
+              FuelType.E10,
+              Instant.parse("2024-01-01T00:00:00Z"),
+              Instant.parse("2024-01-01T00:00:00Z")
+            ),
+            FuelPrice(
+              1.55,
+              FuelType.E5,
+              Instant.parse("2024-01-01T00:00:00Z"),
+              Instant.parse("2024-01-01T00:00:00Z")
+            )
+          )
         )
       )
-
     }
 
     "returns None for nullable station flags when the database values are NULL" in {
@@ -195,15 +199,30 @@ class GetSqlQueriesSpec extends MariadbHelper with Logging {
           )
         )
 
-        result <- sut.findPricesForStation(nodeId)
+        result <- sut.findHistoricalPricesForStation(nodeId)
       } yield result).futureValue
 
-      result must have size 1
-
-      result.head.temporaryClosure mustBe None
-      result.head.permanentClosure mustBe None
-      result.head.isMotorwayServiceStation mustBe None
-      result.head.isSupermarketServiceStation mustBe None
+      result mustBe Some(
+        fakeFuelStationWithPrices(
+          nodeId = nodeId,
+          isSameTradingAndBrandName = None,
+          brandName = "",
+          temporaryClosure = None,
+          permanentClosure = None,
+          isMotorwayServiceStation = None,
+          isSupermarketServiceStation = None,
+          location = fakeFuelStationLocation(country = None),
+          fuelTypes = List(),
+          fuelPrices = List(
+            FuelPrice(
+              1.45,
+              FuelType.E10,
+              Instant.parse("2024-01-01T00:00:00Z"),
+              Instant.parse("2024-01-01T00:00:00Z")
+            )
+          )
+        )
+      )
     }
   }
 }

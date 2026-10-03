@@ -284,7 +284,7 @@ class FuelPriceServiceSpec extends BaseSpec {
         ))
       )
 
-      when(mockGetSqlQueries.findPricesForStation(any())).thenReturn(
+      when(mockGetSqlQueries.findHistoricalPricesForStation(any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(nodeId = "nodeId1", fuelPrices = Seq(FuelPrice(150.0, FuelType.E10, now, now))))),
         Future.successful(Seq(fakeFuelStationWithPrices(nodeId = "nodeId2", fuelPrices = Seq(FuelPrice(110.0, FuelType.E5, now, now)))))
       )
@@ -295,7 +295,7 @@ class FuelPriceServiceSpec extends BaseSpec {
       result.find(_.nodeId == "nodeId1").map(_.fuelPrices) mustBe Some(Seq(FuelPrice(150.0, FuelType.E10, now, now)))
       result.find(_.nodeId == "nodeId2").map(_.fuelPrices) mustBe Some(Seq(FuelPrice(110.0, FuelType.E5, now, now)))
       
-      verify(mockGetSqlQueries, times(2)).findPricesForStation(any())
+      verify(mockGetSqlQueries, times(2)).findHistoricalPricesForStation(any())
     }
   }
 }

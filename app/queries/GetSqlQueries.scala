@@ -61,9 +61,6 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
        * Finds the {numberOfResult} most recently updated fuel stations, ranked by the most recent
        * priceLastUpdated timestamp among their current E10 or B7 price.
        *
-       * current_fuel_prices contains one current price per station + fuel type, so no historical
-       * price filtering or ROW_NUMBER() window function is required.
-       *
        * A station is only eligible to be ranked if it meets ALL of the following:
        *   - it has a current E10 or B7 price
        *   - that price was last updated within the past 6 months
@@ -83,59 +80,49 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
        * Result rows are unordered.
        */
       SQL(
-        s"""WITH ranking_prices AS (
+        s"""WITH cheapest_stations AS (
            |    SELECT
-           |        cp.nodeId_bin,
-           |        cp.priceLastUpdated
-           |    FROM fuel_prices_latest cp
-           |    JOIN fuel_types ft
-           |      ON ft.id = cp.fuelTypeId
-           |    JOIN fuel_stations fs
-           |      ON fs.nodeId_bin = cp.nodeId_bin
-           |    WHERE ft.name IN ('E10', 'B7')
-           |      AND cp.priceLastUpdated >= UTC_TIMESTAMP() - INTERVAL 6 MONTH
+           |        fpl.nodeId_bin,
+           |        MIN(fpl.price) AS price
+           |    FROM fuel_prices_latest AS fpl
+           |    JOIN fuel_types AS ft
+           |        ON ft.id = fpl.fuelTypeId
+           |    JOIN fuel_stations AS fs
+           |        ON fs.nodeId_bin = fpl.nodeId_bin
+           |    WHERE fpl.priceChangeEffectiveTimestamp >= CURRENT_TIMESTAMP - INTERVAL 6 MONTH
+           |      AND ft.name IN ('${FuelType.E10}', '${FuelType.B7_STANDARD}')
            |      AND COALESCE(fs.permanentClosure, 0) = 0
            |      AND COALESCE(fs.temporaryClosure, 0) = 0
            |      $inClause
-           |),
-           |most_recent_per_station AS (
-           |    SELECT
-           |        nodeId_bin,
-           |        MAX(priceLastUpdated) AS mostRecentUpdate
-           |    FROM ranking_prices
-           |    GROUP BY nodeId_bin
-           |),
-           |top_stations AS (
-           |    SELECT nodeId_bin
-           |    FROM most_recent_per_station
-           |    ORDER BY mostRecentUpdate DESC
+           |    GROUP BY fpl.nodeId_bin
+           |    ORDER BY priceLastUpdated DESC
            |    LIMIT {limit}
            |)
            |SELECT
            |    HEX(fs.nodeId_bin) AS nodeId,
            |    fs.tradingName,
+           |    fs.temporaryClosure,
+           |    fs.permanentClosure,
+           |    fs.isMotorwayServiceStation,
+           |    fs.isSupermarketServiceStation,
            |    fs.addressLine1,
            |    fs.addressLine2,
            |    fs.city,
            |    fs.postcode,
            |    fs.latitude,
            |    fs.longitude,
-           |    fs.temporaryClosure,
-           |    fs.permanentClosure,
-           |    fs.isMotorwayServiceStation,
-           |    fs.isSupermarketServiceStation,
+           |    fpl.price,
            |    ft.name AS fuelType,
-           |    cp.price,
-           |    cp.priceChangeEffectiveTimestamp,
-           |    cp.priceLastUpdated
-           |FROM top_stations ts
-           |JOIN fuel_prices_latest cp
-           |  ON cp.nodeId_bin = ts.nodeId_bin
-           |JOIN fuel_stations fs
-           |  ON fs.nodeId_bin = ts.nodeId_bin
-           |JOIN fuel_types ft
-           |  ON ft.id = cp.fuelTypeId;
-           |""".stripMargin
+           |    fpl.priceLastUpdated,
+           |    fpl.priceChangeEffectiveTimestamp
+           |FROM cheapest_stations AS cs
+           |JOIN fuel_stations AS fs
+           |    ON fs.nodeId_bin = cs.nodeId_bin
+           |JOIN fuel_prices_latest AS fpl
+           |    ON fpl.nodeId_bin = cs.nodeId_bin
+           |JOIN fuel_types AS ft
+           |    ON ft.id = fpl.fuelTypeId
+           |ORDER BY fpl.price ASC""".stripMargin
       )
         .on(allParams *)
         .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
@@ -165,7 +152,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
         val placeholders =
           stationsFilter.indices.map(i => s"UNHEX({station$i})").mkString(", ")
 
-        s" AND cp.nodeId_bin IN ($placeholders)"
+        s" AND fpl.nodeId_bin IN ($placeholders)"
       } else {
         ""
       }
@@ -176,9 +163,6 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     val rows = db.withConnection { implicit conn =>
       /**
        * Finds the {numberOfResult} cheapest fuel stations, ranked by their lowest current E10 or B7 price.
-       *
-       * current_fuel_prices contains one current price per station + fuel type, so no historical
-       * price filtering or ROW_NUMBER() window function is required.
        *
        * A station is only eligible to be ranked if it meets ALL of the following:
        *   - it has a current E10 or B7 price
@@ -196,57 +180,49 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
        * Result rows are unordered.
        */
       SQL(
-        s"""WITH ranking_prices AS (
-           |    SELECT cp.nodeId_bin, cp.price
-           |    FROM fuel_prices_latest cp
-           |    JOIN fuel_types ft
-           |      ON ft.id = cp.fuelTypeId
-           |    JOIN fuel_stations fs
-           |      ON fs.nodeId_bin = cp.nodeId_bin
-           |    WHERE ft.name IN ('E10', 'B7')
-           |      AND cp.priceLastUpdated >= UTC_TIMESTAMP() - INTERVAL 6 MONTH
+        s"""WITH cheapest_stations AS (
+           |    SELECT
+           |        fpl.nodeId_bin,
+           |        MIN(fpl.price) AS price
+           |    FROM fuel_prices_latest AS fpl
+           |    JOIN fuel_types AS ft
+           |        ON ft.id = fpl.fuelTypeId
+           |    JOIN fuel_stations AS fs
+           |        ON fs.nodeId_bin = fpl.nodeId_bin
+           |    WHERE fpl.priceChangeEffectiveTimestamp >= CURRENT_TIMESTAMP - INTERVAL 6 MONTH
+           |      AND ft.name IN ('${FuelType.E10}', '${FuelType.B7_STANDARD}')
            |      AND COALESCE(fs.permanentClosure, 0) = 0
            |      AND COALESCE(fs.temporaryClosure, 0) = 0
            |      $inClause
-           |),
-           |cheapest_per_station AS (
-           |    SELECT
-           |        nodeId_bin,
-           |        MIN(price) AS cheapestPrice
-           |    FROM ranking_prices
-           |    GROUP BY nodeId_bin
-           |),
-           |top_stations AS (
-           |    SELECT nodeId_bin
-           |    FROM cheapest_per_station
-           |    ORDER BY cheapestPrice ASC
+           |    GROUP BY fpl.nodeId_bin
+           |    ORDER BY price ASC
            |    LIMIT {limit}
            |)
            |SELECT
            |    HEX(fs.nodeId_bin) AS nodeId,
            |    fs.tradingName,
+           |    fs.temporaryClosure,
+           |    fs.permanentClosure,
+           |    fs.isMotorwayServiceStation,
+           |    fs.isSupermarketServiceStation,
            |    fs.addressLine1,
            |    fs.addressLine2,
            |    fs.city,
            |    fs.postcode,
            |    fs.latitude,
            |    fs.longitude,
-           |    fs.temporaryClosure,
-           |    fs.permanentClosure,
-           |    fs.isMotorwayServiceStation,
-           |    fs.isSupermarketServiceStation,
+           |    fpl.price,
            |    ft.name AS fuelType,
-           |    cp.price,
-           |    cp.priceChangeEffectiveTimestamp,
-           |    cp.priceLastUpdated
-           |FROM top_stations ts
-           |JOIN fuel_prices_latest cp
-           |  ON cp.nodeId_bin = ts.nodeId_bin
-           |JOIN fuel_stations fs
-           |  ON fs.nodeId_bin = ts.nodeId_bin
-           |JOIN fuel_types ft
-           |  ON ft.id = cp.fuelTypeId;
-           |""".stripMargin
+           |    fpl.priceLastUpdated,
+           |    fpl.priceChangeEffectiveTimestamp
+           |FROM cheapest_stations AS cs
+           |JOIN fuel_stations AS fs
+           |    ON fs.nodeId_bin = cs.nodeId_bin
+           |JOIN fuel_prices_latest AS fpl
+           |    ON fpl.nodeId_bin = cs.nodeId_bin
+           |JOIN fuel_types AS ft
+           |    ON ft.id = fpl.fuelTypeId
+           |ORDER BY fpl.price ASC""".stripMargin
       )
         .on(allParams *)
         .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
@@ -333,8 +309,8 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
     }
   }(using databaseExecutionContext)
 
-  def findPricesForStation(nodeId: String): Future[Seq[FuelStationWithPrices]] = Future {
-    db.withConnection { implicit conn =>
+  def findHistoricalPricesForStation(nodeId: String): Future[Option[FuelStationWithPrices]] = Future {
+    val rows = db.withConnection { implicit conn =>
       SQL(
         """SELECT fp.*, ft.name AS fuelType, fs.tradingName AS tradingName, HEX(fp.nodeId_bin) as nodeId,
           | fs.temporaryClosure as temporaryClosure, fs.permanentClosure as permanentClosure, fs.isMotorwayServiceStation as isMotorwayServiceStation, fs.isSupermarketServiceStation as isSupermarketServiceStation,
@@ -348,9 +324,32 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
         .on("nodeId" -> nodeId)
         .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
     }
+
+    val prices = rows.flatMap(_.fuelPrices)
+    rows.headOption.map(_.copy(fuelPrices = prices))
   }(using databaseExecutionContext)
 
-  def findPricesForStations(nodeIds: Seq[String]): Future[Seq[FuelStationWithPrices]] = Future {
+  def findLatestPricesForStation(nodeId: String): Future[Option[FuelStationWithPrices]] = Future {
+    val rows = db.withConnection { implicit conn =>
+      SQL(
+        """SELECT fp.*, ft.name AS fuelType, fs.tradingName AS tradingName, HEX(fp.nodeId_bin) as nodeId,
+          | fs.temporaryClosure as temporaryClosure, fs.permanentClosure as permanentClosure, fs.isMotorwayServiceStation as isMotorwayServiceStation, fs.isSupermarketServiceStation as isSupermarketServiceStation,
+          | fs.addressLine1 as addressLine1, fs.addressLine2 as addressLine2, fs.city as city, fs.postcode as postcode,
+          | fs.latitude as latitude, fs.longitude as longitude
+          |FROM fuel_prices_latest fp
+          |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
+          |LEFT JOIN fuel_stations fs ON fp.nodeId_bin = fs.nodeId_bin
+          |WHERE fp.nodeId_bin = UNHEX({nodeId})""".stripMargin
+      )
+        .on("nodeId" -> nodeId)
+        .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
+    }
+
+    val prices = rows.flatMap(_.fuelPrices)
+    rows.headOption.map(_.copy(fuelPrices = prices))
+  }(using databaseExecutionContext)
+
+  def findLatestPricesForStations(nodeIds: Seq[String]): Future[Seq[FuelStationWithPrices]] = Future {
     val binaryIds = nodeIds.map(java.util.HexFormat.of().parseHex)
 
     val rows = db.withConnection { implicit conn =>
@@ -359,7 +358,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
           | fs.temporaryClosure as temporaryClosure, fs.permanentClosure as permanentClosure, fs.isMotorwayServiceStation as isMotorwayServiceStation, fs.isSupermarketServiceStation as isSupermarketServiceStation,
           | fs.addressLine1 as addressLine1, fs.addressLine2 as addressLine2, fs.city as city, fs.postcode as postcode,
           | fs.latitude as latitude, fs.longitude as longitude
-          |FROM fuel_prices fp
+          |FROM fuel_prices_latest fp
           |LEFT JOIN fuel_types ft ON fp.fuelTypeId = ft.id
           |LEFT JOIN fuel_stations fs ON fp.nodeId_bin = fs.nodeId_bin
           |WHERE fp.nodeId_bin IN ({nodeIds})""".stripMargin

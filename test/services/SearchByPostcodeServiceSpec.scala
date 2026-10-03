@@ -55,7 +55,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
       when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
         Future.successful(Seq(nearStation, farStation))
       )
-      when(mockGetSqlQueries.findPricesForStations(any[Seq[String]])).thenReturn(
+      when(mockGetSqlQueries.findLatestPricesForStations(any[Seq[String]])).thenReturn(
         Future.successful(Seq(nearStationWithPrice))
       )
 
@@ -73,7 +73,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
       viewModel.fuelStationWithPrices.head.fuelPrices mustBe List(nearStationPrice)
       viewModel.fuelStationWithPrices.head.distance must be < 2000.0 // metres, sanity check for the ~1km fixture
 
-      verify(mockGetSqlQueries).findPricesForStations(Seq("nearNodeId"))
+      verify(mockGetSqlQueries).findLatestPricesForStations(Seq("nearNodeId"))
     }
 
     "propagate an UpstreamErrorResponse from the postcode lookup without querying stations" in {
@@ -87,7 +87,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
 
       result mustBe Left(error)
       verify(mockGetSqlQueries, times(0)).getFuelStations(any[utils.GeoBoundingBox])
-      verify(mockGetSqlQueries, times(0)).findPricesForStations(any[Seq[String]])
+      verify(mockGetSqlQueries, times(0)).findLatestPricesForStations(any[Seq[String]])
     }
 
     "return a view model containing the station with an empty fuelPrices list when the station has prices but none match the requested fuel type" in {
@@ -105,7 +105,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
       when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
         Future.successful(Seq(nearStation))
       )
-      when(mockGetSqlQueries.findPricesForStations(any[Seq[String]])).thenReturn(
+      when(mockGetSqlQueries.findLatestPricesForStations(any[Seq[String]])).thenReturn(
         Future.successful(Seq(nearStationWithPrice))
       )
 
@@ -119,10 +119,9 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
       viewModel.radius mustBe radiusMiles
       viewModel.fuelType mustBe FuelType.E10
 
-      viewModel.fuelStationWithPrices.map(_.nodeId) mustBe List("nearNodeId")
-      viewModel.fuelStationWithPrices.head.fuelPrices mustBe empty
+      viewModel.fuelStationWithPrices.map(_.nodeId) mustBe List.empty
 
-      verify(mockGetSqlQueries).findPricesForStations(Seq("nearNodeId"))
+      verify(mockGetSqlQueries).findLatestPricesForStations(Seq("nearNodeId"))
     }
 
     "return a view model with an empty fuelStationWithPrices list when no prices are found for the fuel type, while preserving centre information" in {
@@ -132,7 +131,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
       when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
         Future.successful(Seq(nearStation))
       )
-      when(mockGetSqlQueries.findPricesForStations(any[Seq[String]])).thenReturn(
+      when(mockGetSqlQueries.findLatestPricesForStations(any[Seq[String]])).thenReturn(
         Future.successful(Seq.empty)
       )
 
@@ -148,17 +147,17 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
 
       viewModel.fuelStationWithPrices mustBe empty
 
-      verify(mockGetSqlQueries).findPricesForStations(Seq("nearNodeId"))
+      verify(mockGetSqlQueries).findLatestPricesForStations(Seq("nearNodeId"))
     }
 
-    "return a view model with an empty fuelStationWithPrices list and call findPricesForStations with an empty Seq when all stations are filtered out by radius" in {
+    "return a view model with an empty findLatestPricesForStations list and call findPricesForStations with an empty Seq when all stations are filtered out by radius" in {
       when(mockPostcodesIOConnector.getCoordinates(postcode)(using hc)).thenReturn(
         EitherT.rightT[Future, UpstreamErrorResponse](geoLoc)
       )
       when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
         Future.successful(Seq(farStation))
       )
-      when(mockGetSqlQueries.findPricesForStations(Seq.empty)).thenReturn(
+      when(mockGetSqlQueries.findLatestPricesForStations(Seq.empty)).thenReturn(
         Future.successful(Seq.empty)
       )
 
@@ -174,7 +173,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
 
       viewModel.fuelStationWithPrices mustBe empty
 
-      verify(mockGetSqlQueries).findPricesForStations(Seq.empty)
+      verify(mockGetSqlQueries).findLatestPricesForStations(Seq.empty)
     }
 
     "build the GeoBoundingBox passed to getFuelStations using the correct radius conversion and coordinates" in {
@@ -184,7 +183,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
       when(mockGetSqlQueries.getFuelStations(any[utils.GeoBoundingBox])).thenReturn(
         Future.successful(Seq.empty)
       )
-      when(mockGetSqlQueries.findPricesForStations(Seq.empty)).thenReturn(
+      when(mockGetSqlQueries.findLatestPricesForStations(Seq.empty)).thenReturn(
         Future.successful(Seq.empty)
       )
 
@@ -221,7 +220,7 @@ class SearchByPostcodeServiceSpec extends BaseSpec {
         fuelPrices = List(nearStationPrice)
       )
 
-      when(mockGetSqlQueries.findPricesForStations(Seq("nearNodeId"))).thenReturn(
+      when(mockGetSqlQueries.findLatestPricesForStations(Seq("nearNodeId"))).thenReturn(
         Future.successful(Seq(stationWithoutLocation))
       )
 

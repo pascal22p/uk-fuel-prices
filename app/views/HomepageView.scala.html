@@ -160,7 +160,7 @@
                         ) ++ station.fuelPrices.map { price =>
                             SummaryListRow(
                                 key = Key(
-                                    content = Text(price.fuelType.toString)
+                                    content = Text(price.fuelType.displayText)
                                 ),
                                 value = Value(
                                     content = HtmlContent(
@@ -242,7 +242,7 @@
                         ) ++ station.fuelPrices.map { price =>
                             SummaryListRow(
                                 key = Key(
-                                    content = Text(price.fuelType.toString)
+                                    content = Text(price.fuelType.displayText)
                                 ),
                                 value = Value(
                                     content = HtmlContent(
