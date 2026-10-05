@@ -8,6 +8,7 @@ import play.api.test.FakeRequest
 import testUtils.MariadbHelper
 
 import java.time.Instant
+import java.time.temporal.ChronoUnit
 import scala.concurrent.Future
 
 class GetSqlQueriesSpec extends MariadbHelper with Logging {
@@ -223,6 +224,278 @@ class GetSqlQueriesSpec extends MariadbHelper with Logging {
           )
         )
       )
+    }
+  }
+
+  "getAverageFuelPrices" must {
+    "return an empty sequence when there are no prices" in {
+      sut.getAverageFuelPrices.futureValue mustBe Seq.empty
+    }
+
+    "average prices across stations and count the stations per fuel type" in {
+      val nodeId1 = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+      val nodeId2 = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179722"
+      val recent = Instant.now.minus(1, ChronoUnit.DAYS)
+
+      val result = (for {
+        _ <- insertSqlQueries.insertStations(Seq(
+          fakeFuelStation(nodeId = nodeId1),
+          fakeFuelStation(nodeId = nodeId2)
+        ))
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E10")
+              .executeInsert()
+          }
+        }
+        _ <- insertSqlQueries.insertFuelPrices(Seq(
+          FuelPriceForStation(nodeId1, Seq(
+            fakeFuelPrice(price = 1.40, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          )),
+          FuelPriceForStation(nodeId2, Seq(
+            fakeFuelPrice(price = 1.60, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          ))
+        ))
+        result <- sut.getAverageFuelPrices
+      } yield result).futureValue
+
+      result must have size 1
+      result.head.fuelType mustBe FuelType.E10
+      result.head.averagePrice.toDouble mustBe (1.50 +- 0.001)
+      result.head.stationCount mustBe 2
+    }
+
+    "group results by fuel type" in {
+      val nodeId1 = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+      val nodeId2 = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179722"
+      val recent = Instant.now.minus(1, ChronoUnit.DAYS)
+
+      val result = (for {
+        _ <- insertSqlQueries.insertStations(Seq(
+          fakeFuelStation(nodeId = nodeId1),
+          fakeFuelStation(nodeId = nodeId2)
+        ))
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E10")
+              .executeInsert()
+          }
+        }
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E5")
+              .executeInsert()
+          }
+        }
+        _ <- insertSqlQueries.insertFuelPrices(Seq(
+          FuelPriceForStation(nodeId1, Seq(
+            fakeFuelPrice(price = 1.40, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent),
+            fakeFuelPrice(price = 1.60, fuelType = FuelType.E5, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          )),
+          FuelPriceForStation(nodeId2, Seq(
+            fakeFuelPrice(price = 1.50, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          ))
+        ))
+        result <- sut.getAverageFuelPrices
+      } yield result).futureValue
+
+      result must have size 2
+
+      val e10 = result.find(_.fuelType == FuelType.E10).value
+      e10.averagePrice.toDouble mustBe (1.45 +- 0.001)
+      e10.stationCount mustBe 2
+
+      val e5 = result.find(_.fuelType == FuelType.E5).value
+      e5.averagePrice.toDouble mustBe (1.60 +- 0.001)
+      e5.stationCount mustBe 1
+    }
+
+    "return results sorted by the fuel type ordinal" in {
+      val nodeId = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+      val recent = Instant.now.minus(1, ChronoUnit.DAYS)
+
+      val result = (for {
+        _ <- insertSqlQueries.insertStations(Seq(fakeFuelStation(nodeId = nodeId)))
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E10")
+              .executeInsert()
+          }
+        }
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E5")
+              .executeInsert()
+          }
+        }
+        _ <- insertSqlQueries.insertFuelPrices(Seq(
+          FuelPriceForStation(nodeId, Seq(
+            fakeFuelPrice(price = 1.55, fuelType = FuelType.E5, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent),
+            fakeFuelPrice(price = 1.45, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          ))
+        ))
+        result <- sut.getAverageFuelPrices
+      } yield result).futureValue
+
+      result must have size 2
+      result.map(_.fuelType) mustBe result.map(_.fuelType).sortBy(_.ordinal)
+    }
+
+    "exclude prices last updated more than 6 months ago" in {
+      val freshNodeId = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+      val staleNodeId = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179722"
+      val fresh = Instant.now.minus(10, ChronoUnit.DAYS)
+      val stale = Instant.now.minus(200, ChronoUnit.DAYS)
+
+      val result = (for {
+        _ <- insertSqlQueries.insertStations(Seq(
+          fakeFuelStation(nodeId = freshNodeId),
+          fakeFuelStation(nodeId = staleNodeId)
+        ))
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E10")
+              .executeInsert()
+          }
+        }
+        _ <- insertSqlQueries.insertFuelPrices(Seq(
+          FuelPriceForStation(freshNodeId, Seq(
+            fakeFuelPrice(price = 1.40, fuelType = FuelType.E10, priceLastUpdated = fresh, priceChangeEffectiveTimestamp = fresh)
+          )),
+          FuelPriceForStation(staleNodeId, Seq(
+            fakeFuelPrice(price = 2.00, fuelType = FuelType.E10, priceLastUpdated = stale, priceChangeEffectiveTimestamp = stale)
+          ))
+        ))
+        result <- sut.getAverageFuelPrices
+      } yield result).futureValue
+
+      result must have size 1
+      result.head.averagePrice.toDouble mustBe (1.40 +- 0.001)
+      result.head.stationCount mustBe 1
+    }
+
+    "omit a fuel type entirely when all of its prices are older than 6 months" in {
+      val nodeId = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+      val stale = Instant.now.minus(200, ChronoUnit.DAYS)
+
+      val result = (for {
+        _ <- insertSqlQueries.insertStations(Seq(fakeFuelStation(nodeId = nodeId)))
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E10")
+              .executeInsert()
+          }
+        }
+        _ <- insertSqlQueries.insertFuelPrices(Seq(
+          FuelPriceForStation(nodeId, Seq(
+            fakeFuelPrice(price = 1.40, fuelType = FuelType.E10, priceLastUpdated = stale, priceChangeEffectiveTimestamp = stale)
+          ))
+        ))
+        result <- sut.getAverageFuelPrices
+      } yield result).futureValue
+
+      result mustBe Seq.empty
+    }
+
+    "exclude permanently closed stations" in {
+      val openNodeId = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+      val closedNodeId = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179722"
+      val recent = Instant.now.minus(1, ChronoUnit.DAYS)
+
+      val result = (for {
+        _ <- insertSqlQueries.insertStations(Seq(
+          fakeFuelStation(nodeId = openNodeId, permanentClosure = Some(false)),
+          fakeFuelStation(nodeId = closedNodeId, permanentClosure = Some(true))
+        ))
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E10")
+              .executeInsert()
+          }
+        }
+        _ <- insertSqlQueries.insertFuelPrices(Seq(
+          FuelPriceForStation(openNodeId, Seq(
+            fakeFuelPrice(price = 1.40, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          )),
+          FuelPriceForStation(closedNodeId, Seq(
+            fakeFuelPrice(price = 2.00, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          ))
+        ))
+        result <- sut.getAverageFuelPrices
+      } yield result).futureValue
+
+      result must have size 1
+      result.head.averagePrice.toDouble mustBe (1.40 +- 0.001)
+      result.head.stationCount mustBe 1
+    }
+
+    "exclude temporarily closed stations" in {
+      val openNodeId = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+      val closedNodeId = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179722"
+      val recent = Instant.now.minus(1, ChronoUnit.DAYS)
+
+      val result = (for {
+        _ <- insertSqlQueries.insertStations(Seq(
+          fakeFuelStation(nodeId = openNodeId, temporaryClosure = Some(false)),
+          fakeFuelStation(nodeId = closedNodeId, temporaryClosure = Some(true))
+        ))
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E10")
+              .executeInsert()
+          }
+        }
+        _ <- insertSqlQueries.insertFuelPrices(Seq(
+          FuelPriceForStation(openNodeId, Seq(
+            fakeFuelPrice(price = 1.40, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          )),
+          FuelPriceForStation(closedNodeId, Seq(
+            fakeFuelPrice(price = 2.00, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          ))
+        ))
+        result <- sut.getAverageFuelPrices
+      } yield result).futureValue
+
+      result must have size 1
+      result.head.averagePrice.toDouble mustBe (1.40 +- 0.001)
+      result.head.stationCount mustBe 1
+    }
+
+    "include stations whose closure flags are NULL" in {
+      val nodeId = "B739362AF81ACC9FEC9EDA6F155348125FA2D5C1772C96BF6855A1BAD0179711"
+      val recent = Instant.now.minus(1, ChronoUnit.DAYS)
+
+      val result = (for {
+        _ <- insertSqlQueries.insertStations(Seq(
+          fakeFuelStation(nodeId = nodeId, temporaryClosure = None, permanentClosure = None)
+        ))
+        _ <- Future {
+          db.withConnection { implicit conn =>
+            SQL("INSERT INTO fuel_types (name) VALUES ({name})")
+              .on("name" -> "E10")
+              .executeInsert()
+          }
+        }
+        _ <- insertSqlQueries.insertFuelPrices(Seq(
+          FuelPriceForStation(nodeId, Seq(
+            fakeFuelPrice(price = 1.45, fuelType = FuelType.E10, priceLastUpdated = recent, priceChangeEffectiveTimestamp = recent)
+          ))
+        ))
+        result <- sut.getAverageFuelPrices
+      } yield result).futureValue
+
+      result must have size 1
+      result.head.averagePrice.toDouble mustBe (1.45 +- 0.001)
+      result.head.stationCount mustBe 1
     }
   }
 }
