@@ -1,7 +1,7 @@
 package controllers
 
 import config.AppConfig
-import models.{FuelPrice, FuelType, GeoLoc}
+import models.{AverageFuelPrice, FuelPrice, FuelType, GeoLoc}
 import org.mockito.ArgumentMatchers.any
 import testUtils.{BaseSpec, FakeAuthAction}
 import play.api.test.Helpers.*
@@ -34,6 +34,31 @@ class HomeControllerSpec extends BaseSpec {
   }
 
   "homepage" must {
+    "show the average price of each fuel" in {
+      when(mockGetSqlQueries.getTotalFuelPrices).thenReturn(Future.successful(1))
+      when(mockGetSqlQueries.getTotalFuelStations).thenReturn(Future.successful(2))
+      when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq(
+          AverageFuelPrice(FuelType.E10, 138.46, 5000),
+          AverageFuelPrice(FuelType.B7_STANDARD, 147.04, 4800)
+        ))
+      )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(Future.successful(Some(Instant.now)))
+      when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(Future.successful(Seq.empty))
+      when(mockFuelStationsService.getCheapestPricesWithStation(any(), any())).thenReturn(Future.successful(Seq.empty))
+
+      val result = sut.index().apply(FakeRequest(GET, "/"))
+
+      status(result) mustBe OK
+      val html = contentAsString(result)
+      html must include("homepage.averagePrices")
+      html must include("Petrol E10")
+      html must include("<strong>138.5p</strong>")
+      html must include("B7 standard")
+      html must include("<strong>147.0p</strong>")
+    }
+
     "not  use geoloc" in {
       when(mockGetSqlQueries.getTotalFuelPrices).thenReturn(
         Future.successful(1)
@@ -43,6 +68,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
         Future.successful(Some(Instant.now))
+      )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
       )
 
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
@@ -73,6 +101,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
         Future.successful(Some(Instant.now))
+      )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
@@ -108,6 +139,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
         Future.successful(Some(Instant.now))
       )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
+      )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(
@@ -142,6 +176,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
         Future.successful(Some(Instant.now))
       )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
+      )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(
@@ -175,6 +212,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
         Future.successful(Some(Instant.now))
+      )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(

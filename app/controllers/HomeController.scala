@@ -44,6 +44,7 @@ class HomeController @Inject()(
     for {
       totalFuelStations <- getSqlQueries.getTotalFuelStations
       totalFuelPrices <- getSqlQueries.getTotalFuelPrices
+      averagePrices <- getSqlQueries.getAverageFuelPrices
       lastUpdate        <- getSqlQueries.getLastUpdate(s"${LockId.stationsAndPricesLock}")
       lastUpdatedFuelPrices <- fuelStationsService.getLatestFuelPricesWithStation(appConfig.maxCountForLastUpdatedPrices, geoloc)
       cheapestPrices <- fuelStationsService.getCheapestPricesWithStation(appConfig.maxCountForLastUpdatedPrices, geoloc)
@@ -51,6 +52,7 @@ class HomeController @Inject()(
      Ok(homepageView(
        totalFuelStations,
        totalFuelPrices,
+       averagePrices,
        lastUpdate,
        lastUpdatedFuelPrices,
        cheapestPrices

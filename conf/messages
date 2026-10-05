@@ -56,3 +56,6 @@ station.updated = Last updated
 station.priceHistory = Price history
 station.currentPrices = Current prices
 station.price = Price (pence)
+homepage.averagePrices = Average prices
+homepage.averagePricesIntro = The average of the latest price reported by each open station, per litre.
+homepage.averagePricesStations = {0} stations reporting
