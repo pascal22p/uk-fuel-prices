@@ -1,9 +1,9 @@
 package models
 
-import play.api.libs.json.{JsPath, Reads}
+import play.api.libs.json.{JsPath, Json, Reads, Writes}
 import play.api.libs.functional.syntax.*
-import anorm._
-import anorm.SqlParser._
+import anorm.*
+import anorm.SqlParser.*
 
 
 final case class FuelStation(
@@ -20,6 +20,11 @@ final case class FuelStation(
                     )
 
 object FuelStation {
+  val writesExport: Writes[FuelStation] = {
+    given Writes[FuelStationLocation] = FuelStationLocation.writesExport
+    Json.writes[FuelStation]
+  }
+
   implicit val fuelStationReads: Reads[FuelStation] = (
     (JsPath \ "node_id").read[String] and
       (JsPath \ "trading_name").read[String] and

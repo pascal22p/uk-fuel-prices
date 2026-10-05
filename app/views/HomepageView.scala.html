@@ -3,6 +3,7 @@
 @import java.time.format.DateTimeFormatter
 @import java.time.ZoneId
 @import play.twirl.api.HtmlFormat
+@import java.time.Instant
 
 @this(
         main: Main,
@@ -12,6 +13,7 @@
 @(
         totalFuelStations: Int,
         totalFuelPrices: Int,
+        lastUpdate: Option[Instant],
         averagePrices: Seq[AverageFuelPrice],
         fuelPricesForStations: Seq[FuelStationWithPrices],
         cheapestPricesForStations: Seq[FuelStationWithPrices]
@@ -52,8 +54,54 @@
             <span class="govuk-caption-m">@messages("homepage.fuelPrices")</span>
             <p class="govuk-heading-xl govuk-!-margin-bottom-0">@totalFuelPrices</p>
         </div>
-
     </div>
+
+    <div class="govuk-grid-row">
+        <div class="govuk-grid-column-full">
+            <span class="govuk-caption-m">@messages("homepage.lastUpdate")</span>
+            <p class="govuk-heading-xl govuk-!-margin-bottom-0">@lastUpdate.fold(messages("homepage.never"))(dateFormatter.format(_))</p>
+        </div>
+    </div>
+
+    <hr class="govuk-section-break govuk-section-break--visible govuk-section-break--l">
+
+    <h2 class="govuk-heading-l">
+    @messages("homepage.averagePrices")
+    </h2>
+
+    @if(averagePrices.isEmpty) {
+
+        <p class="govuk-body">
+        @messages("homepage.noFuelPrices")
+        </p>
+
+    } else {
+
+        <p class="govuk-body">
+        @messages("homepage.averagePricesIntro")
+        </p>
+
+        @govukSummaryList(
+            SummaryList(
+                rows = averagePrices.map { average =>
+                    SummaryListRow(
+                        key = Key(
+                            content = Text(average.fuelType.displayText)
+                        ),
+                        value = Value(
+                            content = HtmlContent(
+                                s"""
+                                <strong>${f"${average.averagePrice}%.1fp"}</strong>
+                                (${messages("homepage.averagePricesStations", average.stationCount)})
+                                """
+                            )
+                        )
+                    )
+                }
+            )
+        )
+
+    }
 
     <hr class="govuk-section-break govuk-section-break--visible govuk-section-break--l">
 

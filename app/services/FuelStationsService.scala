@@ -46,7 +46,7 @@ class FuelStationsService @Inject()(
       case result => result
     }
   }
-
+  
   def getLatestFuelPricesWithStation(numberOfResult: Int, geoloc: Option[GeoLoc]): Future[Seq[FuelStationWithPrices]] = {
     val radius = appConfig.localStationsRadius
     (for {
