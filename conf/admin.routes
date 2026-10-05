@@ -5,3 +5,5 @@ GET     /update-fuel-stations               controllers.admin.AdminController.up
 GET     /update-fuel-station/$nodeId<[A-Fa-f0-9]{64}>        controllers.admin.AdminController.updateFuelStation(nodeId: String)
 GET     /update-fuel-station                controllers.admin.AdminController.updatePostFuelStation()
 GET     /partial-update                     controllers.admin.AdminController.partialUpdate()
+GET     /export/fuel-prices                 controllers.admin.ExportController.exportFuelPrices()
+GET     /export/fuel-stations               controllers.admin.ExportController.exportFuelStations()

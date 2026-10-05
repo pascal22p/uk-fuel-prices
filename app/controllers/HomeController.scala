@@ -11,6 +11,7 @@ import play.api.mvc.*
 import queries.GetSqlQueries
 import services.FuelStationsService
 import views.html.{HomepageView, StationView}
+import models.LockId
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
@@ -43,13 +44,15 @@ class HomeController @Inject()(
     for {
       totalFuelStations <- getSqlQueries.getTotalFuelStations
       totalFuelPrices <- getSqlQueries.getTotalFuelPrices
-      lastUpdates <- fuelStationsService.getLatestFuelPricesWithStation(appConfig.maxCountForLastUpdatedPrices, geoloc)
+      lastUpdate        <- getSqlQueries.getLastUpdate(s"${LockId.stationsAndPricesLock}")
+      lastUpdatedFuelPrices <- fuelStationsService.getLatestFuelPricesWithStation(appConfig.maxCountForLastUpdatedPrices, geoloc)
       cheapestPrices <- fuelStationsService.getCheapestPricesWithStation(appConfig.maxCountForLastUpdatedPrices, geoloc)
     } yield {
      Ok(homepageView(
        totalFuelStations,
        totalFuelPrices,
-       lastUpdates,
+       lastUpdate,
+       lastUpdatedFuelPrices,
        cheapestPrices
      ))
     }

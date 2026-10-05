@@ -41,6 +41,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
       )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
+      )
 
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(
@@ -67,6 +70,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
+      )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
@@ -99,6 +105,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
       )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
+      )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(
@@ -130,6 +139,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
       )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
+      )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(
@@ -160,6 +172,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
+      )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
       )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
