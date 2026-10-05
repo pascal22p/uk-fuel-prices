@@ -120,8 +120,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |JOIN fuel_prices_latest AS fpl
            |    ON fpl.nodeId_bin = cs.nodeId_bin
            |JOIN fuel_types AS ft
-           |    ON ft.id = fpl.fuelTypeId
-           |ORDER BY fpl.priceChangeEffectiveTimestamp DESC""".stripMargin
+           |    ON ft.id = fpl.fuelTypeId""".stripMargin
       )
         .on(allParams *)
         .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
@@ -220,8 +219,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |JOIN fuel_prices_latest AS fpl
            |    ON fpl.nodeId_bin = cs.nodeId_bin
            |JOIN fuel_types AS ft
-           |    ON ft.id = fpl.fuelTypeId
-           |ORDER BY fpl.price ASC""".stripMargin
+           |    ON ft.id = fpl.fuelTypeId""".stripMargin
       )
         .on(allParams *)
         .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
