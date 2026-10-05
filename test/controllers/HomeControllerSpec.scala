@@ -44,6 +44,7 @@ class HomeControllerSpec extends BaseSpec {
           AverageFuelPrice(FuelType.B7_STANDARD, 147.04, 4800)
         ))
       )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(Future.successful(Some(Instant.now)))
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(Future.successful(Seq.empty))
       when(mockFuelStationsService.getCheapestPricesWithStation(any(), any())).thenReturn(Future.successful(Seq.empty))
 
@@ -64,6 +65,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
+      )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
       )
       when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
         Future.successful(Seq.empty)
@@ -94,6 +98,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
+      )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
       )
       when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
         Future.successful(Seq.empty)
@@ -129,6 +136,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
       )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
+      )
       when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
         Future.successful(Seq.empty)
       )
@@ -163,6 +173,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
       )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
+      )
       when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
         Future.successful(Seq.empty)
       )
@@ -196,6 +209,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
+      )
+      when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
+        Future.successful(Some(Instant.now))
       )
       when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
         Future.successful(Seq.empty)

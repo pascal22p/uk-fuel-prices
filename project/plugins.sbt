@@ -1,5 +1,5 @@
 
-addSbtPlugin("org.playframework" % "sbt-plugin" % "3.0.11")
+addSbtPlugin("org.playframework" % "sbt-plugin" % "3.0.12")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-digest" % "1.1.4")
 
@@ -9,6 +9,6 @@ addSbtPlugin("org.scalameta"       % "sbt-scalafmt"             % "2.6.2")
 
 addSbtPlugin("org.scoverage"       % "sbt-scoverage"            % "2.4.4")
 
-addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.6.1")
+addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.6.2")
 
 addSbtPlugin("com.github.sbt" % "sbt-git" % "2.2.0")

@@ -30,6 +30,8 @@ SearByPostcode.ChooseRadiusQuestion.radiusInMiles=Radius in miles
 
 homepage.fuelStations = Fuel stations
 homepage.fuelPrices = Fuel prices
+homepage.lastUpdate = Last update
+homepage.never = Never
 homepage.recentlyUpdatedPrices = Recently updated prices
 homepage.noFuelPrices = No fuel prices are currently available.
 homepage.lastUpdatedPrices = Last updated fuel prices
