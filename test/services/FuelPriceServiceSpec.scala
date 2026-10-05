@@ -285,8 +285,8 @@ class FuelPriceServiceSpec extends BaseSpec {
       )
 
       when(mockGetSqlQueries.findHistoricalPricesForStation(any())).thenReturn(
-        Future.successful(Seq(fakeFuelStationWithPrices(nodeId = "nodeId1", fuelPrices = Seq(FuelPrice(150.0, FuelType.E10, now, now))))),
-        Future.successful(Seq(fakeFuelStationWithPrices(nodeId = "nodeId2", fuelPrices = Seq(FuelPrice(110.0, FuelType.E5, now, now)))))
+        Future.successful(Some(fakeFuelStationWithPrices(nodeId = "nodeId1", fuelPrices = Seq(FuelPrice(150.0, FuelType.E10, now, now))))),
+        Future.successful(Some(fakeFuelStationWithPrices(nodeId = "nodeId2", fuelPrices = Seq(FuelPrice(110.0, FuelType.E5, now, now)))))
       )
 
       val result = sut.getFuelPriceFromPostcode("NE").futureValue

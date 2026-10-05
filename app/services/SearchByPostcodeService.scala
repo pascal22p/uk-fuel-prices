@@ -42,7 +42,7 @@ class SearchByPostcodeService @Inject()(
                   Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, loc.latitude, loc.longitude).s12
                 }
 
-              fuelStation.copy(distance = distance)
+              fuelStation.copy(distance = distance, fuelPrices = fuelStation.fuelPrices.filter(_.fuelType == fuelType))
             }.toList
           }
         )

@@ -80,10 +80,9 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
        * Result rows are unordered.
        */
       SQL(
-        s"""WITH cheapest_stations AS (
+        s"""WITH latest_stations AS (
            |    SELECT
-           |        fpl.nodeId_bin,
-           |        MIN(fpl.price) AS price
+           |        fpl.nodeId_bin
            |    FROM fuel_prices_latest AS fpl
            |    JOIN fuel_types AS ft
            |        ON ft.id = fpl.fuelTypeId
@@ -95,7 +94,7 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |      AND COALESCE(fs.temporaryClosure, 0) = 0
            |      $inClause
            |    GROUP BY fpl.nodeId_bin
-           |    ORDER BY priceLastUpdated DESC
+           |    ORDER BY MAX(fpl.priceLastUpdated) DESC, fpl.nodeId_bin
            |    LIMIT {limit}
            |)
            |SELECT
@@ -115,14 +114,14 @@ final class GetSqlQueries @Inject()(db: Database, databaseExecutionContext: Data
            |    ft.name AS fuelType,
            |    fpl.priceLastUpdated,
            |    fpl.priceChangeEffectiveTimestamp
-           |FROM cheapest_stations AS cs
+           |FROM latest_stations AS cs
            |JOIN fuel_stations AS fs
            |    ON fs.nodeId_bin = cs.nodeId_bin
            |JOIN fuel_prices_latest AS fpl
            |    ON fpl.nodeId_bin = cs.nodeId_bin
            |JOIN fuel_types AS ft
            |    ON ft.id = fpl.fuelTypeId
-           |ORDER BY fpl.price ASC""".stripMargin
+           |ORDER BY fpl.priceChangeEffectiveTimestamp DESC""".stripMargin
       )
         .on(allParams *)
         .as(FuelStationWithPrices.fuelPriceWithStationInfoParser.*)
