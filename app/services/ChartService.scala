@@ -19,11 +19,9 @@ object Series {
 class ChartService @Inject()(getSqlQueries: GetSqlQueries)(implicit ec: ExecutionContext) {
 
   def priceHistoryData(nodeId: String): Future[Seq[Series]] =
-    getSqlQueries.findPricesForStation(nodeId).map { stations =>
-      stations.flatMap(_.fuelPrices)
-        .groupBy(_.fuelType)
-        .toSeq
-        .map { case (fuelType, pts) =>
+    getSqlQueries.findHistoricalPricesForStation(nodeId).map { station =>
+      station.fold(Seq.empty) { station =>
+        station.fuelPrices.groupBy(_.fuelType).map { case (fuelType, pts) =>
           Series(
             fuelType.displayText,
             pts
@@ -35,6 +33,7 @@ class ChartService @Inject()(getSqlQueries: GetSqlQueries)(implicit ec: Executio
                 )
               )
           )
-        }
+        }.toSeq
+      }
     }
 }

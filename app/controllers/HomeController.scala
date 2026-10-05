@@ -52,8 +52,8 @@ class HomeController @Inject()(
      Ok(homepageView(
        totalFuelStations,
        totalFuelPrices,
-       averagePrices,
        lastUpdate,
+       averagePrices,
        lastUpdatedFuelPrices,
        cheapestPrices
      ))

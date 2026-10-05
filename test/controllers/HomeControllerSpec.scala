@@ -66,6 +66,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getTotalFuelStations).thenReturn(
         Future.successful(2)
       )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
+      )
       when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
         Future.successful(Some(Instant.now))
       )
@@ -101,6 +104,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
         Future.successful(Some(Instant.now))
+      )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
       )
       when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
         Future.successful(Seq.empty)
@@ -142,6 +148,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
         Future.successful(Seq.empty)
       )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
+      )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(
@@ -179,6 +188,9 @@ class HomeControllerSpec extends BaseSpec {
       when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
         Future.successful(Seq.empty)
       )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
+      )
       when(mockAppConfig.maxCountForLastUpdatedPrices).thenReturn(10)
       when(mockFuelStationsService.getLatestFuelPricesWithStation(any(), any())).thenReturn(
         Future.successful(Seq(fakeFuelStationWithPrices(
@@ -212,6 +224,9 @@ class HomeControllerSpec extends BaseSpec {
       )
       when(mockGetSqlQueries.getLastUpdate(any())).thenReturn(
         Future.successful(Some(Instant.now))
+      )
+      when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
+        Future.successful(Seq.empty)
       )
       when(mockGetSqlQueries.getAverageFuelPrices).thenReturn(
         Future.successful(Seq.empty)

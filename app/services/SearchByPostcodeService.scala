@@ -35,15 +35,14 @@ class SearchByPostcodeService @Inject()(
       }
       fuelStationWithPrices <-
         EitherT.liftF(
-          getSqlQueries.findPricesForStations(fuelStations.map(_.nodeId)).map { fuelStationsWithPrices =>
-            fuelStationsWithPrices.map { fuelStation =>
-              val latestPrice = fuelStation.fuelPrices.filter(_.fuelType == fuelType).maxByOption(_.priceChangeEffectiveTimestamp).toList
-              val distance    = 
+          getSqlQueries.findLatestPricesForStations(fuelStations.map(_.nodeId)).map { fuelStationsWithPrices =>
+            fuelStationsWithPrices.filter(_.fuelPrices.exists(_.fuelType == fuelType)).map { fuelStation =>
+              val distance    =
                 fuelStation.location.location.fold(0.0) { loc =>
-                  Geodesic.WGS84.Inverse(coordinates._1, coordinates._2, loc.latitude, loc.longitude).s12
+                  Geodesic.WGS84.Inverse(coordinates.latitude, coordinates.longitude, loc.latitude, loc.longitude).s12
                 }
 
-              fuelStation.copy(fuelPrices = latestPrice, distance = distance)
+              fuelStation.copy(distance = distance, fuelPrices = fuelStation.fuelPrices.filter(_.fuelType == fuelType))
             }.toList
           }
         )

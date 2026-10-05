@@ -13,8 +13,8 @@
 @(
         totalFuelStations: Int,
         totalFuelPrices: Int,
-        averagePrices: Seq[AverageFuelPrice],
         lastUpdate: Option[Instant],
+        averagePrices: Seq[AverageFuelPrice],
         fuelPricesForStations: Seq[FuelStationWithPrices],
         cheapestPricesForStations: Seq[FuelStationWithPrices]
 )(implicit authenticatedRequest: AuthenticatedRequest[?], messages: Messages)
@@ -62,6 +62,46 @@
             <p class="govuk-heading-xl govuk-!-margin-bottom-0">@lastUpdate.fold(messages("homepage.never"))(dateFormatter.format(_))</p>
         </div>
     </div>
+
+    <hr class="govuk-section-break govuk-section-break--visible govuk-section-break--l">
+
+    <h2 class="govuk-heading-l">
+    @messages("homepage.averagePrices")
+    </h2>
+
+    @if(averagePrices.isEmpty) {
+
+        <p class="govuk-body">
+        @messages("homepage.noFuelPrices")
+        </p>
+
+    } else {
+
+        <p class="govuk-body">
+        @messages("homepage.averagePricesIntro")
+        </p>
+
+        @govukSummaryList(
+            SummaryList(
+                rows = averagePrices.map { average =>
+                    SummaryListRow(
+                        key = Key(
+                            content = Text(average.fuelType.displayText)
+                        ),
+                        value = Value(
+                            content = HtmlContent(
+                                s"""
+                                <strong>${f"${average.averagePrice}%.1fp"}</strong>
+                                (${messages("homepage.averagePricesStations", average.stationCount)})
+                                """
+                            )
+                        )
+                    )
+                }
+            )
+        )
+
+    }
 
     <hr class="govuk-section-break govuk-section-break--visible govuk-section-break--l">
 
@@ -168,7 +208,7 @@
                         ) ++ station.fuelPrices.map { price =>
                             SummaryListRow(
                                 key = Key(
-                                    content = Text(price.fuelType.toString)
+                                    content = Text(price.fuelType.displayText)
                                 ),
                                 value = Value(
                                     content = HtmlContent(
@@ -250,7 +290,7 @@
                         ) ++ station.fuelPrices.map { price =>
                             SummaryListRow(
                                 key = Key(
-                                    content = Text(price.fuelType.toString)
+                                    content = Text(price.fuelType.displayText)
                                 ),
                                 value = Value(
                                     content = HtmlContent(
