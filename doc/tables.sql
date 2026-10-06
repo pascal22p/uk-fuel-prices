@@ -58,7 +58,7 @@ CREATE TABLE `fuel_prices` (
                                KEY `lastUpdated` (`lastUpdated`),
                                KEY `fk_fuel_type` (`fuelTypeId`),
                                CONSTRAINT `fk_fuel_type` FOREIGN KEY (`fuelTypeId`) REFERENCES `fuel_types` (`id`),
-                               CONSTRAINT `fuel_prices_ibfk_1` FOREIGN KEY (`nodeId_bin`) REFERENCES `fuel_stations` (`nodeId_bin`) ON DELETE CASCADE ON UPDATE CASCADE
+                               CONSTRAINT `fuel_prices_ibfk_1` FOREIGN KEY (`nodeId_bin`) REFERENCES `fuel_stations` (`nodeId_bin`) ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS `fuel_prices_latest`;
