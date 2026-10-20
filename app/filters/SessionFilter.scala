@@ -2,11 +2,11 @@ package filters
 
 import java.util.UUID
 import javax.inject.Inject
-import play.api.mvc.*
+
 import scala.concurrent.ExecutionContext
 
+import play.api.mvc.*
 import org.apache.pekko.stream.Materializer
-
 import models.Attrs
 
 class SessionFilter @Inject() (
