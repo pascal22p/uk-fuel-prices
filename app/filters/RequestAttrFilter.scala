@@ -22,6 +22,7 @@ class RequestAttrFilter @Inject() (
 
   override def apply(next: RequestHeader => Future[Result])(request: RequestHeader): Future[Result] = {
     val requestId = request.headers.get(headerName).getOrElse(UUID.randomUUID().toString)
+
     val sessionId =
       request.attrs
         .get(Attrs.SessionId)
@@ -43,7 +44,7 @@ class RequestAttrFilter @Inject() (
     next(enrichedRequest)
       .map { req =>
         val newHeaders = (req.header.headers - headerName) + (headerName -> requestId)
-        req.withHeaders(newHeaders.toSeq*)
+        req.withHeaders(newHeaders.toSeq *)
       }
       .recoverWith {
         // workaround so that the new attributes are available in the error handler

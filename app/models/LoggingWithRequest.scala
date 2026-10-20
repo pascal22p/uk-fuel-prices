@@ -4,6 +4,7 @@ import models.Attrs
 import org.slf4j.{MDC, MarkerFactory}
 import play.api.{Logging, MarkerContext}
 import play.api.mvc.RequestHeader
+import uk.gov.hmrc.http.HeaderCarrier
 
 trait LoggingWithRequest extends Logging {
 
@@ -19,6 +20,20 @@ trait LoggingWithRequest extends Logging {
     MarkerContext(marker)
   }
 
+  @SuppressWarnings(Array("org.wartremover.warts.RedundantConversions"))
+  implicit def headerCarrierToMarkerContext(
+                                             implicit hc: HeaderCarrier
+                                           ): MarkerContext = {
+    val requestId = hc.requestId.fold("Unknown")(_.value)
+    val sessionId = hc.sessionId.fold("Unknown")(_.value)
+
+    MDC.put("request_id", requestId)
+    MDC.put("session_id", sessionId)
+
+    val marker = MarkerFactory.getDetachedMarker(s"requestId=$requestId, sessionId=$sessionId")
+    MarkerContext(marker)
+  }
+  
   def withRequestLogging[A](block: => A)(implicit request: RequestHeader): A = {
     requestHeaderToMarkerContext
     try block

@@ -1,7 +1,7 @@
 package jobs
 
 import services.FuelPriceService
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, RequestId}
 import config.AppConfig
 
 import scala.concurrent.duration.DurationInt
@@ -17,6 +17,8 @@ import scala.concurrent.{Await, ExecutionContext}
 import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.api.trace.{SpanKind, StatusCode}
 
+import java.util.UUID
+
 class PartialUpdateStationsAndPricesJob(
                                             fuelPriceService: FuelPriceService,
                                             db: Database,
@@ -29,15 +31,15 @@ class PartialUpdateStationsAndPricesJob(
 
   def receive: Receive = {
     case RunJob => {
+      implicit val hc: HeaderCarrier = HeaderCarrier(requestId = Some(RequestId(UUID.randomUUID().toString)))
+      
       logger.info("\u001b[35m Starting scheduled job partial update\u001b[0m")
       val span = tracer
         .spanBuilder("PartialUpdateJob")
         .setSpanKind(SpanKind.INTERNAL)
         .startSpan()
       val scope = span.makeCurrent()
-
-      implicit val hc: HeaderCarrier = HeaderCarrier()
-
+      
       try {
         db.withTransaction { implicit conn =>
           val overlapInSeconds = 60
