@@ -57,6 +57,7 @@ class RequestAttrFilter @Inject() (
             HeaderNames.xRequestId -> requestId
           ) *
         )
+        .discardingHeader(HeaderNames.xSessionId)
       }
       .recoverWith {
         // workaround so that the new attributes are available in the error handler
